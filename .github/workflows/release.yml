@@ -1,0 +1,80 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # For a real tag push (vX.Y.Z) the version comes from the tag itself.
+      # For a manual workflow_dispatch dry-run there is no tag, so fall back to
+      # a throwaway dev version — this run will build/pack but not publish.
+      - name: Determine version
+        id: get-version
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            version="${GITHUB_REF_NAME#v}"
+          else
+            version="0.0.0-ci.${GITHUB_RUN_NUMBER}"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Install .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore BSG.Tools.csproj
+
+      - name: Publish application
+        run: >
+          dotnet publish BSG.Tools.csproj
+          -c Release
+          -r win-x64
+          --self-contained true
+          -p:Version=${{ steps.get-version.outputs.version }}
+          -o publish
+
+      - name: Install Velopack CLI
+        run: dotnet tool install -g vpk
+
+      # Pulls down the previous release's packages (if any) so vpk can compute
+      # a delta patch instead of shipping a full download every time.
+      # Fails harmlessly on the very first release, when no GitHub Release exists yet.
+      - name: Download previous release (for delta packages)
+        run: vpk download github --repoUrl "https://github.com/${{ github.repository }}" -o Releases
+        continue-on-error: true
+
+      - name: Pack Velopack release
+        run: >
+          vpk pack
+          -u BSG.Tools
+          -v ${{ steps.get-version.outputs.version }}
+          -p publish
+          -e BSG.Tools.exe
+          -o Releases
+
+      # Only push a real GitHub Release when this run was triggered by an actual
+      # version tag — a manual workflow_dispatch run stops here (build/pack only).
+      - name: Upload release to GitHub
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: >
+          vpk upload github
+          --repoUrl "https://github.com/${{ github.repository }}"
+          --token ${{ secrets.GITHUB_TOKEN }}
+          -o Releases
+          --publish true
+          --releaseName "BSG.Tools v${{ steps.get-version.outputs.version }}"
+          --tag ${{ github.ref_name }}

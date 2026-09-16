@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <!-- Needed only for FolderBrowserDialog (WPF has no built-in folder picker) -->
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>BSG.Tools</RootNamespace>
+    <AssemblyName>BSG.Tools</AssemblyName>
+    <!-- Local/dev default; CI overrides this per release via `dotnet publish -p:Version=X.Y.Z` from the Git tag -->
+    <Version>0.0.1</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Excel read/write. Install via: dotnet add package ClosedXML -->
+    <PackageReference Include="ClosedXML" Version="0.104.1" />
+    <!-- Windows installer packaging + in-app auto-update. Install via: dotnet add package Velopack -->
+    <PackageReference Include="Velopack" Version="1.2.0" />
+  </ItemGroup>
+
+</Project>
