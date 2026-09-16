@@ -1,9 +1,11 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Threading;
 using Microsoft.Win32;
 using Velopack;
 using BSG.Tools.Models;
@@ -16,12 +18,14 @@ namespace BSG.Tools
     {
         private string? _lastSuccessfulOutputPath;
         private UpdateInfo? _pendingUpdate;
+        private DispatcherTimer? _toastTimer;
 
         public MainWindow()
         {
             InitializeComponent();
             LoadSettingsIntoUi();
             UpdateSupplierInputsEnabled();
+            UpdateExportButtonEnabled();
             TxtVersion.Text = $"v{GetCurrentVersion()}";
             _ = CheckForUpdatesAsync();
         }
@@ -77,6 +81,7 @@ namespace BSG.Tools
             if (dialog.ShowDialog() == true)
             {
                 TxtSourceFile.Text = dialog.FileName;
+                UpdateExportButtonEnabled();
             }
         }
 
@@ -115,6 +120,7 @@ namespace BSG.Tools
             if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 TxtOutputFolder.Text = dialog.SelectedPath;
+                UpdateExportButtonEnabled();
             }
         }
 
@@ -128,6 +134,13 @@ namespace BSG.Tools
             bool enabled = ChkIncludeSupplier.IsChecked == true;
             TxtSupplierName.IsEnabled = enabled;
             TxtSupplierAddress.IsEnabled = enabled;
+            LblSupplierName.IsEnabled = enabled;
+            LblSupplierAddress.IsEnabled = enabled;
+        }
+
+        private void UpdateExportButtonEnabled()
+        {
+            BtnExport.IsEnabled = File.Exists(TxtSourceFile.Text) && Directory.Exists(TxtOutputFolder.Text);
         }
 
         private void BtnExport_Click(object sender, RoutedEventArgs e)
@@ -166,15 +179,20 @@ namespace BSG.Tools
             {
                 LabelExcelBuilder.Build(TxtSourceFile.Text, outputPath, options);
                 _lastSuccessfulOutputPath = outputPath;
-                TxtStatus.Foreground = (System.Windows.Media.Brush)System.Windows.Application.Current.Resources["BrushStatusSuccess"];
-                TxtStatus.Text = $"Đã xuất file thành công: {outputPath} (nhấp để mở thư mục)";
-                TxtStatus.Cursor = System.Windows.Input.Cursors.Hand;
-                TxtStatus.TextDecorations = TextDecorations.Underline;
+                ClearStatus();
+                ShowToast("Xuất file thành công.", showOpenFolder: true);
             }
             catch (Exception ex)
             {
                 SetStatusError($"Lỗi khi xuất file: {ex.Message}");
             }
+        }
+
+        private void ClearStatus()
+        {
+            TxtStatus.Text = "";
+            TxtStatus.Cursor = System.Windows.Input.Cursors.Arrow;
+            TxtStatus.TextDecorations = null;
         }
 
         private void SetStatusError(string message)
@@ -191,9 +209,22 @@ namespace BSG.Tools
             if (_lastSuccessfulOutputPath is null)
                 return;
 
+            OpenContainingFolder(_lastSuccessfulOutputPath);
+        }
+
+        private void BtnToastOpenFolder_Click(object sender, RoutedEventArgs e)
+        {
+            if (_lastSuccessfulOutputPath is null)
+                return;
+
+            OpenContainingFolder(_lastSuccessfulOutputPath);
+        }
+
+        private void OpenContainingFolder(string path)
+        {
             try
             {
-                Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{_lastSuccessfulOutputPath}\"")
+                Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{path}\"")
                 {
                     UseShellExecute = true
                 });
@@ -202,6 +233,22 @@ namespace BSG.Tools
             {
                 SetStatusError("Không thể mở thư mục chứa file (file hoặc thư mục có thể đã bị xoá/đổi tên).");
             }
+        }
+
+        private void ShowToast(string message, bool showOpenFolder)
+        {
+            TxtToastMessage.Text = message;
+            BtnToastOpenFolder.Visibility = showOpenFolder ? Visibility.Visible : Visibility.Collapsed;
+            Toast.Visibility = Visibility.Visible;
+
+            _toastTimer?.Stop();
+            _toastTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
+            _toastTimer.Tick += (_, _) =>
+            {
+                Toast.Visibility = Visibility.Collapsed;
+                _toastTimer!.Stop();
+            };
+            _toastTimer.Start();
         }
 
         // ---------------- Cài đặt tab ----------------
@@ -233,10 +280,45 @@ namespace BSG.Tools
 
             SettingsService.Save(settings);
             _lastSuccessfulOutputPath = null;
-            TxtStatus.Foreground = (System.Windows.Media.Brush)System.Windows.Application.Current.Resources["BrushStatusSuccess"];
-            TxtStatus.Text = "Đã lưu cài đặt.";
-            TxtStatus.Cursor = System.Windows.Input.Cursors.Arrow;
-            TxtStatus.TextDecorations = null;
+            ClearStatus();
+            ShowToast("Đã lưu cài đặt.", showOpenFolder: false);
+        }
+
+        private void TxtProductionYear_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            e.Handled = !e.Text.All(char.IsDigit);
+        }
+
+        private void TxtProductionYear_Pasting(object sender, DataObjectPastingEventArgs e)
+        {
+            if (!e.DataObject.GetDataPresent(System.Windows.DataFormats.Text) ||
+                !((string)e.DataObject.GetData(System.Windows.DataFormats.Text)).All(char.IsDigit))
+            {
+                e.CancelCommand();
+            }
+        }
+
+        private void BtnRestoreDefaults_Click(object sender, RoutedEventArgs e)
+        {
+            var result = System.Windows.MessageBox.Show(
+                "Thao tác này sẽ xoá toàn bộ cài đặt đã lưu và đưa các trường về giá trị mặc định. Bạn có chắc chắn muốn tiếp tục?",
+                "Khôi phục mặc định",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (result != MessageBoxResult.Yes)
+                return;
+
+            var defaults = new AppSettings();
+            SettingsService.Save(defaults);
+
+            TxtImporter.Text = defaults.Importer;
+            TxtImporterAddress.Text = defaults.ImporterAddress;
+            TxtProductionYear.Text = DateTime.Now.Year.ToString();
+            TxtUsageInstructions.Text = defaults.UsageInstructions;
+            TxtStorageInstructions.Text = defaults.StorageInstructions;
+
+            ShowToast("Đã khôi phục mặc định.", showOpenFolder: false);
         }
     }
 }

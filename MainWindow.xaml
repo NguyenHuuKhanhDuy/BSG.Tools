@@ -15,25 +15,28 @@
 
             <!-- ===================== TAB: XUẤT FILE ===================== -->
             <TabItem Header="Xuất file">
-                <StackPanel Margin="0,20,0,0">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="0,16,0,16">
 
                     <Border Background="{StaticResource BrushCardBackground}" BorderBrush="{StaticResource BrushBorder}"
                             BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,16">
                         <StackPanel>
-                            <TextBlock Text="File Excel nguồn" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                            <TextBlock Text="File Excel nguồn" Style="{StaticResource SectionTitleStyle}" Margin="0,0,0,8"/>
                             <DockPanel Margin="0,0,0,16">
                                 <Button x:Name="BtnChooseFile" Content="Chọn file..." Width="110"
                                         DockPanel.Dock="Right" Margin="8,0,0,0" Click="BtnChooseFile_Click"/>
                                 <Button x:Name="BtnDownloadTemplate" Content="Tải file mẫu"
                                         DockPanel.Dock="Right" Margin="8,0,0,0" Padding="10,6" Click="BtnDownloadTemplate_Click"/>
-                                <TextBox x:Name="TxtSourceFile" IsReadOnly="True" VerticalContentAlignment="Center"/>
+                                <TextBox x:Name="TxtSourceFile" IsReadOnly="True" VerticalContentAlignment="Center"
+                                         Style="{StaticResource ReadOnlyPathTextBoxStyle}" Tag="Chưa chọn file..."/>
                             </DockPanel>
 
-                            <TextBlock Text="Thư mục lưu file xuất" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                            <TextBlock Text="Thư mục lưu file xuất" FontWeight="SemiBold" Margin="0,0,0,8"/>
                             <DockPanel>
                                 <Button x:Name="BtnChooseFolder" Content="Chọn thư mục..." Width="110"
                                         DockPanel.Dock="Right" Margin="8,0,0,0" Click="BtnChooseFolder_Click"/>
-                                <TextBox x:Name="TxtOutputFolder" IsReadOnly="True" VerticalContentAlignment="Center"/>
+                                <TextBox x:Name="TxtOutputFolder" IsReadOnly="True" VerticalContentAlignment="Center"
+                                         Style="{StaticResource ReadOnlyPathTextBoxStyle}" Tag="Chưa chọn thư mục..."/>
                             </DockPanel>
                         </StackPanel>
                     </Border>
@@ -44,10 +47,10 @@
                             <CheckBox x:Name="ChkIncludeSupplier" Content="Bao gồm thông tin Nhà cung cấp"
                                       Margin="0,0,0,12" Checked="ChkIncludeSupplier_Changed" Unchecked="ChkIncludeSupplier_Changed"/>
 
-                            <TextBlock Text="Nhà cung cấp" Foreground="{StaticResource BrushTextSecondary}" Margin="0,0,0,6"/>
+                            <TextBlock x:Name="LblSupplierName" Text="Nhà cung cấp" Style="{StaticResource SupplierSectionTitleStyle}" Margin="0,0,0,8"/>
                             <TextBox x:Name="TxtSupplierName" Margin="0,0,0,12"/>
 
-                            <TextBlock Text="Địa chỉ nhà cung cấp" Foreground="{StaticResource BrushTextSecondary}" Margin="0,0,0,6"/>
+                            <TextBlock x:Name="LblSupplierAddress" Text="Địa chỉ nhà cung cấp" Style="{StaticResource SupplierFieldLabelStyle}" Margin="0,0,0,8"/>
                             <TextBox x:Name="TxtSupplierAddress"/>
                         </StackPanel>
                     </Border>
@@ -56,57 +59,83 @@
                             Style="{StaticResource AccentButtonStyle}"
                             Click="BtnExport_Click"/>
                 </StackPanel>
+                </ScrollViewer>
             </TabItem>
 
             <!-- ===================== TAB: CÀI ĐẶT ===================== -->
             <TabItem Header="Cài đặt">
-                <StackPanel Margin="0,20,0,0">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="0,16,0,16">
 
                     <Border Background="{StaticResource BrushCardBackground}" BorderBrush="{StaticResource BrushBorder}"
                             BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,16">
                         <StackPanel>
-                            <TextBlock Text="Nhập khẩu và phân phối" Foreground="{StaticResource BrushTextSecondary}" Margin="0,0,0,6"/>
-                            <TextBox x:Name="TxtImporter" Margin="0,0,0,14"/>
+                            <TextBlock Text="Nhập khẩu và phân phối" Style="{StaticResource SectionTitleStyle}" Margin="0,0,0,8"/>
+                            <TextBox x:Name="TxtImporter" Margin="0,0,0,12"/>
 
-                            <TextBlock Text="Địa chỉ nhà nhập khẩu" Foreground="{StaticResource BrushTextSecondary}" Margin="0,0,0,6"/>
-                            <TextBox x:Name="TxtImporterAddress" Margin="0,0,0,14"/>
+                            <TextBlock Text="Địa chỉ nhà nhập khẩu" Foreground="{StaticResource BrushTextSecondary}" Margin="0,0,0,8"/>
+                            <TextBox x:Name="TxtImporterAddress" Margin="0,0,0,12"/>
 
                             <TextBlock Text="Năm sản xuất (mặc định lấy năm hiện tại nếu để trống)"
-                                       Foreground="{StaticResource BrushTextSecondary}" TextWrapping="Wrap" Margin="0,0,0,6"/>
-                            <TextBox x:Name="TxtProductionYear"/>
+                                       Foreground="{StaticResource BrushTextSecondary}" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                            <TextBox x:Name="TxtProductionYear" MaxLength="4"
+                                     PreviewTextInput="TxtProductionYear_PreviewTextInput"
+                                     DataObject.Pasting="TxtProductionYear_Pasting"/>
                         </StackPanel>
                     </Border>
 
                     <Border Background="{StaticResource BrushCardBackground}" BorderBrush="{StaticResource BrushBorder}"
                             BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,16">
                         <StackPanel>
-                            <TextBlock Text="Hướng dẫn sử dụng" Foreground="{StaticResource BrushTextSecondary}" Margin="0,0,0,6"/>
-                            <TextBox x:Name="TxtUsageInstructions" Margin="0,0,0,14"/>
+                            <TextBlock Text="Hướng dẫn sử dụng" Style="{StaticResource SectionTitleStyle}" Margin="0,0,0,8"/>
+                            <TextBox x:Name="TxtUsageInstructions" Margin="0,0,0,12"
+                                     AcceptsReturn="True" TextWrapping="Wrap" Height="70"
+                                     VerticalScrollBarVisibility="Auto" VerticalContentAlignment="Top"/>
 
-                            <TextBlock Text="Cách bảo quản" Foreground="{StaticResource BrushTextSecondary}" Margin="0,0,0,6"/>
-                            <TextBox x:Name="TxtStorageInstructions"/>
+                            <TextBlock Text="Cách bảo quản" Foreground="{StaticResource BrushTextSecondary}" Margin="0,0,0,8"/>
+                            <TextBox x:Name="TxtStorageInstructions"
+                                     AcceptsReturn="True" TextWrapping="Wrap" Height="70"
+                                     VerticalScrollBarVisibility="Auto" VerticalContentAlignment="Top"/>
                         </StackPanel>
                     </Border>
 
-                    <Button x:Name="BtnSaveSettings" Content="Lưu cài đặt" Height="36" Width="160"
-                            HorizontalAlignment="Left" Style="{StaticResource AccentButtonStyle}"
-                            Click="BtnSaveSettings_Click"/>
+                    <StackPanel Orientation="Horizontal">
+                        <Button x:Name="BtnSaveSettings" Content="Lưu cài đặt" Height="36" Width="160"
+                                HorizontalAlignment="Left" Style="{StaticResource AccentButtonStyle}"
+                                Click="BtnSaveSettings_Click"/>
+                        <Button x:Name="BtnRestoreDefaults" Content="Khôi phục mặc định" Height="36"
+                                HorizontalAlignment="Left" Margin="8,0,0,0" Padding="12,6"
+                                Click="BtnRestoreDefaults_Click"/>
+                    </StackPanel>
                 </StackPanel>
+                </ScrollViewer>
             </TabItem>
 
         </TabControl>
 
-        <!-- ===================== UPDATE BANNER ===================== -->
-        <Border x:Name="UpdateBanner" Grid.Row="1" Visibility="Collapsed" Margin="0,14,0,0"
-                Background="{StaticResource BrushSecondaryButton}" BorderBrush="{StaticResource BrushAccent}"
-                BorderThickness="1" CornerRadius="8" Padding="12,8">
-            <DockPanel>
-                <Button x:Name="BtnUpdateNow" Content="Cập nhật ngay" DockPanel.Dock="Right"
-                        Style="{StaticResource AccentButtonStyle}" Margin="12,0,0,0" Click="BtnUpdateNow_Click"/>
-                <TextBlock x:Name="TxtUpdateBanner" VerticalAlignment="Center" TextWrapping="Wrap"
-                           Text="Có bản cập nhật mới"/>
-            </DockPanel>
-        </Border>
+        <!-- ===================== UPDATE BANNER / TOAST ===================== -->
+        <StackPanel Grid.Row="1">
+            <Border x:Name="UpdateBanner" Visibility="Collapsed" Margin="0,14,0,0"
+                    Background="{StaticResource BrushSecondaryButton}" BorderBrush="{StaticResource BrushAccent}"
+                    BorderThickness="1" CornerRadius="8" Padding="12,8">
+                <DockPanel>
+                    <Button x:Name="BtnUpdateNow" Content="Cập nhật ngay" DockPanel.Dock="Right"
+                            Style="{StaticResource AccentButtonStyle}" Margin="12,0,0,0" Click="BtnUpdateNow_Click"/>
+                    <TextBlock x:Name="TxtUpdateBanner" VerticalAlignment="Center" TextWrapping="Wrap"
+                               Text="Có bản cập nhật mới"/>
+                </DockPanel>
+            </Border>
+
+            <Border x:Name="Toast" Visibility="Collapsed" Margin="0,14,0,0"
+                    Background="{StaticResource BrushSecondaryButton}" BorderBrush="{StaticResource BrushStatusSuccess}"
+                    BorderThickness="1" CornerRadius="8" Padding="12,8">
+                <DockPanel>
+                    <Button x:Name="BtnToastOpenFolder" Content="Mở thư mục" DockPanel.Dock="Right"
+                            Margin="12,0,0,0" Padding="10,6" Click="BtnToastOpenFolder_Click"/>
+                    <TextBlock x:Name="TxtToastMessage" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                </DockPanel>
+            </Border>
+        </StackPanel>
 
         <!-- ===================== STATUS BAR ===================== -->
         <DockPanel Grid.Row="2" Margin="0,14,0,0">

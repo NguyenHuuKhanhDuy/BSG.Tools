@@ -40,6 +40,34 @@
             <Setter Property="FontSize" Value="13"/>
         </Style>
 
+        <!-- Field label that dims together with the input it describes, for fields
+             whose enabled state is toggled at runtime (e.g. supplier info). -->
+        <Style x:Key="SupplierFieldLabelStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource BrushTextSecondary}"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Foreground" Value="{StaticResource BrushTextDisabled}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Leading label of a card, promoted above the regular field labels below it. -->
+        <Style x:Key="SectionTitleStyle" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="14"/>
+        </Style>
+
+        <!-- Section title variant for the "Nhà cung cấp" card, whose leading label
+             also dims together with the checkbox it depends on. -->
+        <Style x:Key="SupplierSectionTitleStyle" TargetType="TextBlock" BasedOn="{StaticResource SectionTitleStyle}">
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Foreground" Value="{StaticResource BrushTextDisabled}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
         <!-- ===================== TEXTBOX ===================== -->
         <Style TargetType="TextBox">
             <Setter Property="Background" Value="{StaticResource BrushCardBackground}"/>
@@ -71,6 +99,51 @@
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter TargetName="border" Property="Background" Value="{StaticResource BrushDisabledBackground}"/>
                                 <Setter Property="Foreground" Value="{StaticResource BrushTextDisabled}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Read-only path field (source file / output folder): value is only ever set
+             via its picker button, so it shows a non-text cursor and, while empty, a
+             placeholder hint instead of a blank box. -->
+        <Style x:Key="ReadOnlyPathTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+            <Setter Property="Cursor" Value="Arrow"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Grid>
+                            <Border x:Name="border"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="6">
+                                <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"/>
+                            </Border>
+                            <TextBlock x:Name="placeholder"
+                                       Text="{TemplateBinding Tag}"
+                                       Foreground="{StaticResource BrushTextSecondary}"
+                                       Margin="{TemplateBinding Padding}"
+                                       VerticalAlignment="Center"
+                                       IsHitTestVisible="False"
+                                       Visibility="Collapsed"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsReadOnly" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource BrushReadOnlyBackground}"/>
+                            </Trigger>
+                            <Trigger Property="IsFocused" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="{StaticResource BrushAccent}"/>
+                                <Setter TargetName="border" Property="BorderThickness" Value="2"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Background" Value="{StaticResource BrushDisabledBackground}"/>
+                                <Setter Property="Foreground" Value="{StaticResource BrushTextDisabled}"/>
+                            </Trigger>
+                            <Trigger Property="Text" Value="">
+                                <Setter TargetName="placeholder" Property="Visibility" Value="Visible"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
