@@ -1,0 +1,64 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <system:String x:Key="Str_WindowTitle">Create Product Label</system:String>
+
+    <!-- Tabs -->
+    <system:String x:Key="Str_Tab_Export">Export</system:String>
+    <system:String x:Key="Str_Tab_Settings">Settings</system:String>
+
+    <!-- Tab: Export -->
+    <system:String x:Key="Str_SourceFileSection">Source Excel file</system:String>
+    <system:String x:Key="Str_BtnChooseFile">Choose file...</system:String>
+    <system:String x:Key="Str_BtnDownloadTemplate">Download template</system:String>
+    <system:String x:Key="Str_NoFileChosen">No file chosen...</system:String>
+    <system:String x:Key="Str_OutputFolderSection">Output folder</system:String>
+    <system:String x:Key="Str_BtnChooseFolder">Choose folder...</system:String>
+    <system:String x:Key="Str_NoFolderChosen">No folder chosen...</system:String>
+    <system:String x:Key="Str_ChkIncludeSupplier">Include supplier information</system:String>
+    <system:String x:Key="Str_SupplierName">Supplier</system:String>
+    <system:String x:Key="Str_SupplierAddress">Supplier address</system:String>
+    <system:String x:Key="Str_BtnExport">Export file</system:String>
+
+    <!-- Tab: Settings -->
+    <system:String x:Key="Str_ImporterSection">Importer and distributor</system:String>
+    <system:String x:Key="Str_ImporterAddress">Importer address</system:String>
+    <system:String x:Key="Str_ProductionYearLabel">Production year (defaults to the current year if left blank)</system:String>
+    <system:String x:Key="Str_UsageInstructionsSection">Usage instructions</system:String>
+    <system:String x:Key="Str_StorageInstructionsLabel">Storage instructions</system:String>
+    <system:String x:Key="Str_LanguageLabel">Language</system:String>
+    <system:String x:Key="Str_ChkDarkMode">Dark mode</system:String>
+    <system:String x:Key="Str_BtnSaveSettings">Save settings</system:String>
+    <system:String x:Key="Str_BtnRestoreDefaults">Restore defaults</system:String>
+
+    <!-- Update banner -->
+    <system:String x:Key="Str_UpdateAvailable">A new update is available</system:String>
+    <system:String x:Key="Str_UpdateAvailableFormat">A new update is available: v{0} — click "Update now" to install.</system:String>
+    <system:String x:Key="Str_BtnUpdateNow">Update now</system:String>
+    <system:String x:Key="Str_Updating">Updating...</system:String>
+    <system:String x:Key="Str_UpdateFailed">Update failed. Please check your network connection and try again.</system:String>
+
+    <!-- Toast -->
+    <system:String x:Key="Str_BtnOpenFolder">Open folder</system:String>
+
+    <!-- Dialogs -->
+    <system:String x:Key="Str_Dialog_ChooseSourceFile">Choose source Excel file</system:String>
+    <system:String x:Key="Str_Dialog_SaveTemplate">Save template file</system:String>
+    <system:String x:Key="Str_ExcelFilter">Excel files (*.xlsx)|*.xlsx</system:String>
+    <system:String x:Key="Str_TemplateFileName">Sample_data_template.xlsx</system:String>
+
+    <!-- Status / messages -->
+    <system:String x:Key="Str_TemplateDownloaded">Template downloaded successfully.</system:String>
+    <system:String x:Key="Str_TemplateCreateError">Error creating template: {0}</system:String>
+    <system:String x:Key="Str_ValidSourceFileRequired">Please choose a valid source Excel file.</system:String>
+    <system:String x:Key="Str_ValidOutputFolderRequired">Please choose an output folder.</system:String>
+    <system:String x:Key="Str_ExportSuccess">File exported successfully.</system:String>
+    <system:String x:Key="Str_ExportError">Error exporting file: {0}</system:String>
+    <system:String x:Key="Str_OpenFolderError">Could not open the containing folder (the file or folder may have been deleted or renamed).</system:String>
+    <system:String x:Key="Str_SettingsSaved">Settings saved.</system:String>
+    <system:String x:Key="Str_RestoreDefaultsConfirm">This will clear all saved settings and reset the fields to their defaults. Are you sure you want to continue?</system:String>
+    <system:String x:Key="Str_RestoreDefaultsTitle">Restore defaults</system:String>
+    <system:String x:Key="Str_DefaultsRestored">Defaults restored.</system:String>
+
+</ResourceDictionary>

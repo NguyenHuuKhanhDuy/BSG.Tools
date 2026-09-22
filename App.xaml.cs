@@ -18,11 +18,12 @@ namespace BSG.Tools
         {
             base.OnStartup(e);
 
-            // Apply the saved theme before the window is created, so it renders
-            // with the right colors from the first frame instead of flashing light
-            // then switching to dark.
+            // Apply the saved theme/language before the window is created, so it
+            // renders correctly from the first frame instead of flashing the
+            // defaults then switching.
             var settings = SettingsService.Load();
             ThemeManager.Apply(settings.Theme);
+            LocalizationManager.Apply(settings.Language);
 
             new MainWindow().Show();
         }

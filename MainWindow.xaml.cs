@@ -49,7 +49,9 @@ namespace BSG.Tools
                 return;
 
             _pendingUpdate = update;
-            TxtUpdateBanner.Text = $"Có bản cập nhật mới: v{update.TargetFullRelease.Version} — bấm \"Cập nhật ngay\" để cài đặt.";
+            TxtUpdateBanner.Text = string.Format(
+                LocalizationManager.GetString("Str_UpdateAvailableFormat"),
+                update.TargetFullRelease.Version);
             UpdateBanner.Visibility = Visibility.Visible;
         }
 
@@ -59,15 +61,15 @@ namespace BSG.Tools
                 return;
 
             BtnUpdateNow.IsEnabled = false;
-            BtnUpdateNow.Content = "Đang cập nhật...";
+            BtnUpdateNow.Content = LocalizationManager.GetString("Str_Updating");
 
             var success = await UpdateService.DownloadAndApplyUpdateAsync(_pendingUpdate);
 
             if (!success)
             {
                 BtnUpdateNow.IsEnabled = true;
-                BtnUpdateNow.Content = "Cập nhật ngay";
-                TxtUpdateBanner.Text = "Cập nhật thất bại. Vui lòng kiểm tra kết nối mạng và thử lại.";
+                BtnUpdateNow.Content = LocalizationManager.GetString("Str_BtnUpdateNow");
+                TxtUpdateBanner.Text = LocalizationManager.GetString("Str_UpdateFailed");
             }
             // Nếu thành công, ApplyUpdatesAndRestart() đã tự khởi động lại app — code sau điểm này sẽ không chạy.
         }
@@ -78,8 +80,8 @@ namespace BSG.Tools
         {
             var dialog = new OpenFileDialog
             {
-                Title = "Chọn file Excel nguồn",
-                Filter = "Excel files (*.xlsx)|*.xlsx"
+                Title = LocalizationManager.GetString("Str_Dialog_ChooseSourceFile"),
+                Filter = LocalizationManager.GetString("Str_ExcelFilter")
             };
 
             if (dialog.ShowDialog() == true)
@@ -93,9 +95,9 @@ namespace BSG.Tools
         {
             var dialog = new Microsoft.Win32.SaveFileDialog
             {
-                Title = "Lưu file mẫu",
-                Filter = "Excel files (*.xlsx)|*.xlsx",
-                FileName = "Mau_du_lieu_san_pham.xlsx"
+                Title = LocalizationManager.GetString("Str_Dialog_SaveTemplate"),
+                Filter = LocalizationManager.GetString("Str_ExcelFilter"),
+                FileName = LocalizationManager.GetString("Str_TemplateFileName")
             };
 
             if (dialog.ShowDialog() != true)
@@ -105,14 +107,12 @@ namespace BSG.Tools
             {
                 LabelExcelBuilder.BuildTemplate(dialog.FileName);
                 _lastSuccessfulOutputPath = dialog.FileName;
-                TxtStatus.Foreground = (System.Windows.Media.Brush)System.Windows.Application.Current.Resources["BrushStatusSuccess"];
-                TxtStatus.Text = $"Đã tải file mẫu: {dialog.FileName} (nhấp để mở thư mục)";
-                TxtStatus.Cursor = System.Windows.Input.Cursors.Hand;
-                TxtStatus.TextDecorations = TextDecorations.Underline;
+                ClearStatus();
+                ShowToast(LocalizationManager.GetString("Str_TemplateDownloaded"), showOpenFolder: true);
             }
             catch (Exception ex)
             {
-                SetStatusError($"Lỗi khi tạo file mẫu: {ex.Message}");
+                SetStatusError(string.Format(LocalizationManager.GetString("Str_TemplateCreateError"), ex.Message));
             }
         }
 
@@ -151,13 +151,13 @@ namespace BSG.Tools
         {
             if (string.IsNullOrWhiteSpace(TxtSourceFile.Text) || !File.Exists(TxtSourceFile.Text))
             {
-                SetStatusError("Vui lòng chọn file Excel nguồn hợp lệ.");
+                SetStatusError(LocalizationManager.GetString("Str_ValidSourceFileRequired"));
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(TxtOutputFolder.Text) || !Directory.Exists(TxtOutputFolder.Text))
             {
-                SetStatusError("Vui lòng chọn thư mục lưu file xuất.");
+                SetStatusError(LocalizationManager.GetString("Str_ValidOutputFolderRequired"));
                 return;
             }
 
@@ -184,11 +184,11 @@ namespace BSG.Tools
                 LabelExcelBuilder.Build(TxtSourceFile.Text, outputPath, options);
                 _lastSuccessfulOutputPath = outputPath;
                 ClearStatus();
-                ShowToast("Xuất file thành công.", showOpenFolder: true);
+                ShowToast(LocalizationManager.GetString("Str_ExportSuccess"), showOpenFolder: true);
             }
             catch (Exception ex)
             {
-                SetStatusError($"Lỗi khi xuất file: {ex.Message}");
+                SetStatusError(string.Format(LocalizationManager.GetString("Str_ExportError"), ex.Message));
             }
         }
 
@@ -235,7 +235,7 @@ namespace BSG.Tools
             }
             catch
             {
-                SetStatusError("Không thể mở thư mục chứa file (file hoặc thư mục có thể đã bị xoá/đổi tên).");
+                SetStatusError(LocalizationManager.GetString("Str_OpenFolderError"));
             }
         }
 
@@ -270,9 +270,17 @@ namespace BSG.Tools
             TxtUsageInstructions.Text = settings.UsageInstructions;
             TxtStorageInstructions.Text = settings.StorageInstructions;
 
-            // Theme itself was already applied at startup (App.xaml.cs); this just
-            // syncs the checkbox so it reflects the saved preference.
+            // Theme/language were already applied at startup (App.xaml.cs); this
+            // just syncs the controls so they reflect the saved preference.
             ChkDarkMode.IsChecked = settings.Theme == ThemeManager.Dark;
+            foreach (System.Windows.Controls.ComboBoxItem item in CmbLanguage.Items)
+            {
+                if ((string)item.Tag == settings.Language)
+                {
+                    CmbLanguage.SelectedItem = item;
+                    break;
+                }
+            }
         }
 
         private void BtnSaveSettings_Click(object sender, RoutedEventArgs e)
@@ -284,13 +292,14 @@ namespace BSG.Tools
                 ProductionYear = TxtProductionYear.Text.Trim(),
                 UsageInstructions = TxtUsageInstructions.Text.Trim(),
                 StorageInstructions = TxtStorageInstructions.Text.Trim(),
-                Theme = ChkDarkMode.IsChecked == true ? ThemeManager.Dark : ThemeManager.Light
+                Theme = ChkDarkMode.IsChecked == true ? ThemeManager.Dark : ThemeManager.Light,
+                Language = CurrentLanguageTag()
             };
 
             SettingsService.Save(settings);
             _lastSuccessfulOutputPath = null;
             ClearStatus();
-            ShowToast("Đã lưu cài đặt.", showOpenFolder: false);
+            ShowToast(LocalizationManager.GetString("Str_SettingsSaved"), showOpenFolder: false);
         }
 
         private void ChkDarkMode_Changed(object sender, RoutedEventArgs e)
@@ -302,6 +311,24 @@ namespace BSG.Tools
             // an app-wide display preference, not label content.
             var settings = SettingsService.Load();
             settings.Theme = theme;
+            SettingsService.Save(settings);
+        }
+
+        private string CurrentLanguageTag() =>
+            (string)((System.Windows.Controls.ComboBoxItem)CmbLanguage.SelectedItem).Tag;
+
+        private void CmbLanguage_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            if (CmbLanguage.SelectedItem is null)
+                return;
+
+            var language = CurrentLanguageTag();
+            LocalizationManager.Apply(language);
+
+            // Persisted immediately (not gated behind "Lưu cài đặt") since this is
+            // an app-wide display preference, not label content — same as dark mode.
+            var settings = SettingsService.Load();
+            settings.Language = language;
             SettingsService.Save(settings);
         }
 
@@ -322,8 +349,8 @@ namespace BSG.Tools
         private void BtnRestoreDefaults_Click(object sender, RoutedEventArgs e)
         {
             var result = System.Windows.MessageBox.Show(
-                "Thao tác này sẽ xoá toàn bộ cài đặt đã lưu và đưa các trường về giá trị mặc định. Bạn có chắc chắn muốn tiếp tục?",
-                "Khôi phục mặc định",
+                LocalizationManager.GetString("Str_RestoreDefaultsConfirm"),
+                LocalizationManager.GetString("Str_RestoreDefaultsTitle"),
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
 
@@ -331,10 +358,11 @@ namespace BSG.Tools
                 return;
 
             // "Restore defaults" only resets the label-content fields below —
-            // dark mode is a separate display preference, left untouched.
+            // dark mode/language are separate display preferences, left untouched.
             var defaults = new AppSettings
             {
-                Theme = ChkDarkMode.IsChecked == true ? ThemeManager.Dark : ThemeManager.Light
+                Theme = ChkDarkMode.IsChecked == true ? ThemeManager.Dark : ThemeManager.Light,
+                Language = CurrentLanguageTag()
             };
             SettingsService.Save(defaults);
 
@@ -344,7 +372,7 @@ namespace BSG.Tools
             TxtUsageInstructions.Text = defaults.UsageInstructions;
             TxtStorageInstructions.Text = defaults.StorageInstructions;
 
-            ShowToast("Đã khôi phục mặc định.", showOpenFolder: false);
+            ShowToast(LocalizationManager.GetString("Str_DefaultsRestored"), showOpenFolder: false);
         }
     }
 }

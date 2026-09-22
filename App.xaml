@@ -7,6 +7,10 @@
                 <!-- Swapped at runtime by ThemeManager; keep this as the first
                      merged dictionary so ThemeManager can replace it in place. -->
                 <ResourceDictionary Source="Themes/LightTheme.xaml"/>
+                <!-- Swapped at runtime by LocalizationManager; keep this as the
+                     second merged dictionary so LocalizationManager can replace
+                     it in place. -->
+                <ResourceDictionary Source="Localization/Strings.vi.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
         <!-- ===================== WINDOW ===================== -->
@@ -189,9 +193,24 @@
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
                                 CornerRadius="6">
+                            <!-- A plain-string Content (e.g. Content="Lưu cài đặt") gets auto-wrapped by
+                                 WPF's default ContentPresenter in a TextBlock that, empirically, does NOT
+                                 resolve implicit TextBlock styles through this Border's (or any ancestor's)
+                                 Resources — it always resolves to the app-wide implicit TextBlock style
+                                 instead, ignoring this button's own Foreground. Giving ContentPresenter an
+                                 explicit ContentTemplate and setting Foreground there as a literal element
+                                 value (not a Style Setter) sidesteps that entirely, since a local value
+                                 always wins over any Style Setter. -->
                             <ContentPresenter Margin="{TemplateBinding Padding}"
                                                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                               VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                               VerticalAlignment="{TemplateBinding VerticalContentAlignment}">
+                                <ContentPresenter.ContentTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}"
+                                                   Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                                    </DataTemplate>
+                                </ContentPresenter.ContentTemplate>
+                            </ContentPresenter>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
@@ -224,9 +243,21 @@
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
                                 CornerRadius="6">
+                            <!-- Same fix as the base Button style: an explicit ContentTemplate that sets
+                                 Foreground as a literal element value, since the auto-wrapped TextBlock
+                                 from a plain-string Content otherwise always resolves the app-wide
+                                 implicit TextBlock style (dark text) and ignores this button's own
+                                 Foreground="White" — unreadable against the accent background in light mode. -->
                             <ContentPresenter Margin="{TemplateBinding Padding}"
                                                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                               VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                               VerticalAlignment="{TemplateBinding VerticalContentAlignment}">
+                                <ContentPresenter.ContentTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}"
+                                                   Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                                    </DataTemplate>
+                                </ContentPresenter.ContentTemplate>
+                            </ContentPresenter>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
@@ -246,6 +277,210 @@
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
+        </Style>
+
+        <!-- ===================== BUTTON (link / low-emphasis auxiliary action) ===================== -->
+        <!-- For actions like "Tải file mẫu" that sit next to a primary action (e.g. "Chọn
+             file...") but are used far less often — styled as a text link, clearly distinct
+             so it isn't mistaken for the primary button next to it. -->
+        <Style x:Key="LinkButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource BrushAccent}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="Transparent">
+                            <!-- Same reasoning as the other button styles: a plain-string Content's
+                                 auto-wrapped TextBlock ignores this button's own Foreground unless set
+                                 as a literal element value via an explicit ContentTemplate. -->
+                            <ContentPresenter VerticalAlignment="Center">
+                                <ContentPresenter.ContentTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}" TextDecorations="Underline"
+                                                   Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+                                    </DataTemplate>
+                                </ContentPresenter.ContentTemplate>
+                            </ContentPresenter>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="{DynamicResource BrushAccentHover}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Foreground" Value="{DynamicResource BrushAccentPressed}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ===================== COMBOBOX ===================== -->
+        <Style TargetType="ComboBoxItem">
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBoxItem">
+                        <Border x:Name="border" Background="Transparent" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource BrushSecondaryButtonHover}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource BrushSecondaryButtonPressed}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="ComboBox">
+            <Setter Property="Background" Value="{DynamicResource BrushCardBackground}"/>
+            <Setter Property="Foreground" Value="{DynamicResource BrushTextPrimary}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BrushBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <!-- Visible chrome: one border spanning the whole control, drawn
+                                 once here rather than inside the toggle button, so it never
+                                 splits into a separate box around just the arrow. -->
+                            <Border x:Name="border"
+                                    Background="{DynamicResource BrushCardBackground}"
+                                    BorderBrush="{DynamicResource BrushBorder}"
+                                    BorderThickness="1" CornerRadius="6">
+                                <Grid Margin="{TemplateBinding Padding}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <ContentPresenter Grid.Column="0" IsHitTestVisible="False"
+                                                       Content="{TemplateBinding SelectionBoxItem}"
+                                                       HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                                    <Path Grid.Column="1" Data="M0,0 L4,4 L8,0" Stroke="{DynamicResource BrushTextSecondary}"
+                                          StrokeThickness="1.5" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                          StrokeLineJoin="Round" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                </Grid>
+                            </Border>
+
+                            <!-- Transparent hit-test layer on top: opens the dropdown without
+                                 drawing any chrome of its own. -->
+                            <ToggleButton x:Name="ToggleButton" Focusable="False" ClickMode="Press"
+                                          IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border Background="Transparent"/>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+
+                            <Popup x:Name="Popup" Placement="Bottom" AllowsTransparency="True"
+                                   Focusable="False" PopupAnimation="Slide"
+                                   IsOpen="{TemplateBinding IsDropDownOpen}">
+                                <Border Background="{DynamicResource BrushCardBackground}"
+                                        BorderBrush="{DynamicResource BrushBorder}" BorderThickness="1"
+                                        CornerRadius="6" MinWidth="{TemplateBinding ActualWidth}"
+                                        MaxHeight="200" Margin="0,4,0,0">
+                                    <ScrollViewer SnapsToDevicePixels="True">
+                                        <ItemsPresenter/>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource BrushAccent}"/>
+                            </Trigger>
+                            <Trigger Property="IsDropDownOpen" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource BrushAccent}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ===================== SCROLLBAR ===================== -->
+        <Style x:Key="ThinScrollBarThumb" TargetType="Thumb">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Thumb">
+                        <Border x:Name="thumbBorder" Background="{DynamicResource BrushBorder}" CornerRadius="3"/>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="thumbBorder" Property="Background" Value="{DynamicResource BrushTextSecondary}"/>
+                            </Trigger>
+                            <Trigger Property="IsDragging" Value="True">
+                                <Setter TargetName="thumbBorder" Property="Background" Value="{DynamicResource BrushAccent}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="ScrollBar">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Width" Value="8"/>
+            <Setter Property="MinWidth" Value="8"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <Grid Background="{TemplateBinding Background}">
+                            <Track x:Name="PART_Track" IsDirectionReversed="True" IsEnabled="{TemplateBinding IsEnabled}">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="ScrollBar.PageUpCommand" Opacity="0" Focusable="False"/>
+                                </Track.DecreaseRepeatButton>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="ScrollBar.PageDownCommand" Opacity="0" Focusable="False"/>
+                                </Track.IncreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb Style="{StaticResource ThinScrollBarThumb}" Width="6" Margin="1,0"/>
+                                </Track.Thumb>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="Orientation" Value="Horizontal">
+                    <Setter Property="Width" Value="Auto"/>
+                    <Setter Property="Height" Value="8"/>
+                    <Setter Property="MinWidth" Value="0"/>
+                    <Setter Property="MinHeight" Value="8"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="ScrollBar">
+                                <Grid Background="{TemplateBinding Background}">
+                                    <Track x:Name="PART_Track" IsEnabled="{TemplateBinding IsEnabled}">
+                                        <Track.DecreaseRepeatButton>
+                                            <RepeatButton Command="ScrollBar.PageLeftCommand" Opacity="0" Focusable="False"/>
+                                        </Track.DecreaseRepeatButton>
+                                        <Track.IncreaseRepeatButton>
+                                            <RepeatButton Command="ScrollBar.PageRightCommand" Opacity="0" Focusable="False"/>
+                                        </Track.IncreaseRepeatButton>
+                                        <Track.Thumb>
+                                            <Thumb Style="{StaticResource ThinScrollBarThumb}" Height="6" Margin="0,1"/>
+                                        </Track.Thumb>
+                                    </Track>
+                                </Grid>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Trigger>
+            </Style.Triggers>
         </Style>
 
         <!-- ===================== TABCONTROL / TABITEM ===================== -->

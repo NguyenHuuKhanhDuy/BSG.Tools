@@ -20,5 +20,8 @@ namespace BSG.Tools.Models
 
         /// <summary>"Light" or "Dark" — see <see cref="Services.ThemeManager"/>.</summary>
         public string Theme { get; set; } = Services.ThemeManager.Light;
+
+        /// <summary>"vi" or "en" — see <see cref="Services.LocalizationManager"/>.</summary>
+        public string Language { get; set; } = Services.LocalizationManager.Vietnamese;
     }
 }
