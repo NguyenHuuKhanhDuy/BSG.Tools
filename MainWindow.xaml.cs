@@ -23,6 +23,10 @@ namespace BSG.Tools
         public MainWindow()
         {
             InitializeComponent();
+            // Theme's palette was already applied at startup (App.xaml.cs); this
+            // paints this window's native title bar to match, since that's OS
+            // chrome DynamicResource styling can't reach.
+            ThemeManager.ApplyTitleBar(this);
             LoadSettingsIntoUi();
             UpdateSupplierInputsEnabled();
             UpdateExportButtonEnabled();
@@ -265,6 +269,10 @@ namespace BSG.Tools
                 : settings.ProductionYear;
             TxtUsageInstructions.Text = settings.UsageInstructions;
             TxtStorageInstructions.Text = settings.StorageInstructions;
+
+            // Theme itself was already applied at startup (App.xaml.cs); this just
+            // syncs the checkbox so it reflects the saved preference.
+            ChkDarkMode.IsChecked = settings.Theme == ThemeManager.Dark;
         }
 
         private void BtnSaveSettings_Click(object sender, RoutedEventArgs e)
@@ -275,13 +283,26 @@ namespace BSG.Tools
                 ImporterAddress = TxtImporterAddress.Text.Trim(),
                 ProductionYear = TxtProductionYear.Text.Trim(),
                 UsageInstructions = TxtUsageInstructions.Text.Trim(),
-                StorageInstructions = TxtStorageInstructions.Text.Trim()
+                StorageInstructions = TxtStorageInstructions.Text.Trim(),
+                Theme = ChkDarkMode.IsChecked == true ? ThemeManager.Dark : ThemeManager.Light
             };
 
             SettingsService.Save(settings);
             _lastSuccessfulOutputPath = null;
             ClearStatus();
             ShowToast("Đã lưu cài đặt.", showOpenFolder: false);
+        }
+
+        private void ChkDarkMode_Changed(object sender, RoutedEventArgs e)
+        {
+            var theme = ChkDarkMode.IsChecked == true ? ThemeManager.Dark : ThemeManager.Light;
+            ThemeManager.Apply(theme);
+
+            // Persisted immediately (not gated behind "Lưu cài đặt") since this is
+            // an app-wide display preference, not label content.
+            var settings = SettingsService.Load();
+            settings.Theme = theme;
+            SettingsService.Save(settings);
         }
 
         private void TxtProductionYear_PreviewTextInput(object sender, TextCompositionEventArgs e)
@@ -309,7 +330,12 @@ namespace BSG.Tools
             if (result != MessageBoxResult.Yes)
                 return;
 
-            var defaults = new AppSettings();
+            // "Restore defaults" only resets the label-content fields below —
+            // dark mode is a separate display preference, left untouched.
+            var defaults = new AppSettings
+            {
+                Theme = ChkDarkMode.IsChecked == true ? ThemeManager.Dark : ThemeManager.Light
+            };
             SettingsService.Save(defaults);
 
             TxtImporter.Text = defaults.Importer;

@@ -17,5 +17,8 @@ namespace BSG.Tools.Models
 
         public string UsageInstructions { get; set; } = "";    // Hướng dẫn sử dụng
         public string StorageInstructions { get; set; } = "";  // Cách bảo quản
+
+        /// <summary>"Light" or "Dark" — see <see cref="Services.ThemeManager"/>.</summary>
+        public string Theme { get; set; } = Services.ThemeManager.Light;
     }
 }
