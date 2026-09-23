@@ -23,4 +23,8 @@
     <SolidColorBrush x:Key="BrushStatusSuccess" Color="#1E8E3E"/>
     <SolidColorBrush x:Key="BrushStatusError" Color="#D93025"/>
 
+    <SolidColorBrush x:Key="BrushWarningBackground" Color="#FFF6E0"/>
+    <SolidColorBrush x:Key="BrushWarningBorder" Color="#F2C94C"/>
+    <SolidColorBrush x:Key="BrushWarningText" Color="#8A5A00"/>
+
 </ResourceDictionary>

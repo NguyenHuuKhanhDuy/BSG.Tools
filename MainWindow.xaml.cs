@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -30,6 +31,7 @@ namespace BSG.Tools
             LoadSettingsIntoUi();
             UpdateSupplierInputsEnabled();
             UpdateExportButtonEnabled();
+            UpdatePreviewButtonEnabled();
             TxtVersion.Text = $"v{GetCurrentVersion()}";
             _ = CheckForUpdatesAsync();
         }
@@ -88,6 +90,7 @@ namespace BSG.Tools
             {
                 TxtSourceFile.Text = dialog.FileName;
                 UpdateExportButtonEnabled();
+                UpdatePreviewButtonEnabled();
             }
         }
 
@@ -125,6 +128,7 @@ namespace BSG.Tools
             {
                 TxtOutputFolder.Text = dialog.SelectedPath;
                 UpdateExportButtonEnabled();
+                UpdatePreviewButtonEnabled();
             }
         }
 
@@ -147,23 +151,21 @@ namespace BSG.Tools
             BtnExport.IsEnabled = File.Exists(TxtSourceFile.Text) && Directory.Exists(TxtOutputFolder.Text);
         }
 
-        private void BtnExport_Click(object sender, RoutedEventArgs e)
+        // Preview only reads the source file, so it doesn't need an output folder.
+        private void UpdatePreviewButtonEnabled()
         {
-            if (string.IsNullOrWhiteSpace(TxtSourceFile.Text) || !File.Exists(TxtSourceFile.Text))
-            {
-                SetStatusError(LocalizationManager.GetString("Str_ValidSourceFileRequired"));
-                return;
-            }
+            BtnPreview.IsEnabled = File.Exists(TxtSourceFile.Text);
+        }
 
-            if (string.IsNullOrWhiteSpace(TxtOutputFolder.Text) || !Directory.Exists(TxtOutputFolder.Text))
-            {
-                SetStatusError(LocalizationManager.GetString("Str_ValidOutputFolderRequired"));
-                return;
-            }
-
+        /// <summary>
+        /// Export inputs shared by direct export and export-from-preview: the
+        /// supplier fields on this tab plus the saved label settings.
+        /// </summary>
+        private BuildOptions CreateBuildOptions()
+        {
             var settings = SettingsService.Load();
 
-            var options = new BuildOptions
+            return new BuildOptions
             {
                 IncludeSupplier = ChkIncludeSupplier.IsChecked == true,
                 SupplierName = TxtSupplierName.Text.Trim(),
@@ -174,14 +176,43 @@ namespace BSG.Tools
                 UsageInstructions = settings.UsageInstructions,
                 StorageInstructions = settings.StorageInstructions
             };
+        }
 
+        /// <summary>Output file path, or null when no valid output folder is chosen.</summary>
+        private string? GetOutputPath()
+        {
+            if (string.IsNullOrWhiteSpace(TxtOutputFolder.Text) || !Directory.Exists(TxtOutputFolder.Text))
+                return null;
+
+            return Path.Combine(TxtOutputFolder.Text, GetOutputFileName());
+        }
+
+        // Known from the source file alone, so the preview can show it even before a folder is chosen.
+        private string GetOutputFileName()
+        {
             var sourceName = Path.GetFileNameWithoutExtension(TxtSourceFile.Text);
             var dateSuffix = DateTime.Now.ToString("ddMMyyyy");
-            var outputPath = Path.Combine(TxtOutputFolder.Text, $"temphu_{sourceName}_{dateSuffix}.xlsx");
+            return $"temphu_{sourceName}_{dateSuffix}.xlsx";
+        }
+
+        private void BtnExport_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(TxtSourceFile.Text) || !File.Exists(TxtSourceFile.Text))
+            {
+                SetStatusError(LocalizationManager.GetString("Str_ValidSourceFileRequired"));
+                return;
+            }
+
+            var outputPath = GetOutputPath();
+            if (outputPath is null)
+            {
+                SetStatusError(LocalizationManager.GetString("Str_ValidOutputFolderRequired"));
+                return;
+            }
 
             try
             {
-                LabelExcelBuilder.Build(TxtSourceFile.Text, outputPath, options);
+                LabelExcelBuilder.Build(TxtSourceFile.Text, outputPath, CreateBuildOptions());
                 _lastSuccessfulOutputPath = outputPath;
                 ClearStatus();
                 ShowToast(LocalizationManager.GetString("Str_ExportSuccess"), showOpenFolder: true);
@@ -189,6 +220,36 @@ namespace BSG.Tools
             catch (Exception ex)
             {
                 SetStatusError(string.Format(LocalizationManager.GetString("Str_ExportError"), ex.Message));
+            }
+        }
+
+        private void BtnPreview_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(TxtSourceFile.Text) || !File.Exists(TxtSourceFile.Text))
+            {
+                SetStatusError(LocalizationManager.GetString("Str_ValidSourceFileRequired"));
+                return;
+            }
+
+            // Source-file problems (missing column, no products, file locked)
+            // are reported here instead of opening an empty/broken preview.
+            IReadOnlyList<LabelEntry> labels;
+            try
+            {
+                labels = LabelExcelBuilder.LoadLabels(TxtSourceFile.Text, CreateBuildOptions());
+            }
+            catch (Exception ex)
+            {
+                SetStatusError(string.Format(LocalizationManager.GetString("Str_PreviewLoadError"), ex.Message));
+                return;
+            }
+
+            ClearStatus();
+            var preview = new PreviewWindow(labels, GetOutputFileName(), GetOutputPath()) { Owner = this };
+            if (preview.ShowDialog() == true && preview.ExportedPath is not null)
+            {
+                _lastSuccessfulOutputPath = preview.ExportedPath;
+                ShowToast(LocalizationManager.GetString("Str_ExportSuccess"), showOpenFolder: true);
             }
         }
 

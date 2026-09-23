@@ -59,9 +59,17 @@
                         </StackPanel>
                     </Border>
 
-                    <Button x:Name="BtnExport" Content="{DynamicResource Str_BtnExport}" Height="38" FontSize="14"
-                            Style="{StaticResource AccentButtonStyle}"
-                            Click="BtnExport_Click"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="140"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Button x:Name="BtnPreview" Grid.Column="0" Content="{DynamicResource Str_BtnPreview}" Height="38" FontSize="14"
+                                Margin="0,0,8,0" Click="BtnPreview_Click"/>
+                        <Button x:Name="BtnExport" Grid.Column="1" Content="{DynamicResource Str_BtnExport}" Height="38" FontSize="14"
+                                Style="{StaticResource AccentButtonStyle}"
+                                Click="BtnExport_Click"/>
+                    </Grid>
                 </StackPanel>
                 </ScrollViewer>
             </TabItem>

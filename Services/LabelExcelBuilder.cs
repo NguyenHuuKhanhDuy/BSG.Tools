@@ -33,6 +33,27 @@ namespace BSG.Tools.Services
         public string StorageInstructions { get; set; } = "";
     }
 
+    /// <summary>One "Label: value" line in a label's content block.</summary>
+    public class LabelLine
+    {
+        public string Label { get; set; } = "";
+        public string Value { get; set; } = "";
+        public bool IsEmpty => string.IsNullOrWhiteSpace(Value);
+    }
+
+    /// <summary>
+    /// One product's label exactly as it will be written to the sheet - the
+    /// shared data behind both the in-app preview and the Excel export, so
+    /// the two can never disagree about what a label contains.
+    /// </summary>
+    public class LabelEntry
+    {
+        public int Stt { get; set; }
+        public string Title { get; set; } = "";     // product name, already upper-cased
+        public string Quantity { get; set; } = "";
+        public IReadOnlyList<LabelLine> Lines { get; set; } = Array.Empty<LabelLine>();
+    }
+
     public static class LabelExcelBuilder
     {
         private const string FontName = "Arial";
@@ -49,11 +70,33 @@ namespace BSG.Tools.Services
         /// label sheet to outputPath.
         /// </summary>
         public static void Build(string sourcePath, string outputPath, BuildOptions opts)
+            => Build(LoadLabels(sourcePath, opts), outputPath);
+
+        /// <summary>
+        /// Reads the source workbook and builds every product's label content
+        /// (STT, title, quantity and ordered "Label: value" lines), without
+        /// writing anything. Throws if the source has no products.
+        /// </summary>
+        public static IReadOnlyList<LabelEntry> LoadLabels(string sourcePath, BuildOptions opts)
         {
             var products = ReadProducts(sourcePath);
             if (products.Count == 0)
                 throw new InvalidOperationException("Không tìm thấy sản phẩm nào trong file nguồn (kiểm tra lại cột TÊN SẢN PHẨM).");
 
+            return products
+                .Select((p, i) => new LabelEntry
+                {
+                    Stt = i + 1,
+                    Title = p.Name.ToUpperInvariant(),
+                    Quantity = p.Quantity,
+                    Lines = BuildContentLines(p, opts),
+                })
+                .ToList();
+        }
+
+        /// <summary>Writes already-built labels (see <see cref="LoadLabels"/>) to outputPath.</summary>
+        public static void Build(IReadOnlyList<LabelEntry> labels, string outputPath)
+        {
             using var workbook = new XLWorkbook();
             var ws = workbook.Worksheets.Add("Nhãn sản phẩm");
 
@@ -110,17 +153,15 @@ namespace BSG.Tools.Services
             // Start one row below the header so there is a blank spacer row,
             // matching the spacing already used between product blocks.
             int currentRow = headerRow + 2;
-            int stt = 0;
 
-            foreach (var p in products)
+            foreach (var label in labels)
             {
-                stt++;
                 int titleRow = currentRow;
                 int contentRow = currentRow + 1;
 
                 // STT (merged across title+content rows, no border, no fill)
                 var sttRange = ws.Range(titleRow, SttCol, contentRow, SttCol).Merge();
-                ws.Cell(titleRow, SttCol).Value = stt;
+                ws.Cell(titleRow, SttCol).Value = label.Stt;
                 sttRange.Style.Font.FontName = FontName;
                 sttRange.Style.Font.Bold = true;
                 sttRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
@@ -129,7 +170,7 @@ namespace BSG.Tools.Services
                 // Title cell (product name, bold, centered)
                 var titleRange = ws.Range(titleRow, ContentStartCol, titleRow, ContentEndCol).Merge();
                 var titleCell = ws.Cell(titleRow, ContentStartCol);
-                titleCell.Value = p.Name.ToUpperInvariant();
+                titleCell.Value = label.Title;
                 titleRange.Style.Font.FontName = FontName;
                 titleRange.Style.Font.Bold = true;
                 titleRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
@@ -144,12 +185,11 @@ namespace BSG.Tools.Services
                 contentRange.Style.Alignment.Vertical = XLAlignmentVerticalValues.Top;
                 contentRange.Style.Alignment.WrapText = true;
                 contentRange.Style.Fill.BackgroundColor = XLColor.White; // hides the seam gridline
-                var contentLines = BuildContentLines(p, opts);
-                FillContentRichText(contentCell, contentLines);
+                FillContentRichText(contentCell, label.Lines);
 
                 // SL (merged across title+content rows, no border, no fill)
                 var slRange = ws.Range(titleRow, SlCol, contentRow, SlCol).Merge();
-                ws.Cell(titleRow, SlCol).Value = p.Quantity;
+                ws.Cell(titleRow, SlCol).Value = label.Quantity;
                 slRange.Style.Font.FontName = FontName;
                 slRange.Style.Font.Bold = true;
                 slRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
@@ -167,7 +207,7 @@ namespace BSG.Tools.Services
                 contentRange.Style.Border.RightBorder = XLBorderStyleValues.Thin;
 
                 ws.Row(titleRow).Height = 20;
-                ws.Row(contentRow).Height = EstimateContentRowHeight(contentLines, mergedContentColumnWidth);
+                ws.Row(contentRow).Height = EstimateContentRowHeight(label.Lines, mergedContentColumnWidth);
 
                 currentRow = contentRow + 2; // leaves one blank row between entries
             }
@@ -226,28 +266,29 @@ namespace BSG.Tools.Services
         /// cell, shared between rich-text rendering and row-height estimation
         /// so both always agree on what will actually be displayed.
         /// </summary>
-        private static List<(string Label, string Value)> BuildContentLines(ProductRow p, BuildOptions opts)
+        private static List<LabelLine> BuildContentLines(ProductRow p, BuildOptions opts)
         {
             var year = string.IsNullOrWhiteSpace(opts.ProductionYear)
                 ? DateTime.Now.Year.ToString()
                 : opts.ProductionYear;
 
-            var lines = new List<(string Label, string Value)>();
+            var lines = new List<LabelLine>();
+            void Add(string label, string value) => lines.Add(new LabelLine { Label = label, Value = value });
 
             if (opts.IncludeSupplier)
             {
-                lines.Add(("Nhà cung cấp", opts.SupplierName));
-                lines.Add(("Địa chỉ nhà Cung cấp", opts.SupplierAddress));
+                Add("Nhà cung cấp", opts.SupplierName);
+                Add("Địa chỉ nhà Cung cấp", opts.SupplierAddress);
             }
 
-            lines.Add(("Nhập khẩu và phân phối", opts.Importer));
-            lines.Add(("Địa chỉ nhà nhập khẩu", opts.ImporterAddress));
-            lines.Add(("Tên Sản phẩm", p.Name));
-            lines.Add(("Xuất xứ", p.Origin));
-            lines.Add(("Thành phần", p.Ingredients));
-            lines.Add(("Hướng dẫn sử dụng", opts.UsageInstructions));
-            lines.Add(("Cách bảo quản", opts.StorageInstructions));
-            lines.Add(("Năm sản xuất", year));
+            Add("Nhập khẩu và phân phối", opts.Importer);
+            Add("Địa chỉ nhà nhập khẩu", opts.ImporterAddress);
+            Add("Tên Sản phẩm", p.Name);
+            Add("Xuất xứ", p.Origin);
+            Add("Thành phần", p.Ingredients);
+            Add("Hướng dẫn sử dụng", opts.UsageInstructions);
+            Add("Cách bảo quản", opts.StorageInstructions);
+            Add("Năm sản xuất", year);
 
             return lines;
         }
@@ -268,14 +309,14 @@ namespace BSG.Tools.Services
         /// exact pixel-perfect wrapping depends on the fonts installed on the
         /// machine that later opens the file in Excel.
         /// </summary>
-        private static double EstimateContentRowHeight(List<(string Label, string Value)> lines, double mergedColumnWidthUnits)
+        private static double EstimateContentRowHeight(IReadOnlyList<LabelLine> lines, double mergedColumnWidthUnits)
         {
             double charsPerLine = Math.Max(1, mergedColumnWidthUnits * CharsPerWidthUnit);
 
             int totalWrappedLines = 0;
-            foreach (var (label, value) in lines)
+            foreach (var line in lines)
             {
-                int displayLength = label.Length + 2 + value.Length; // "Label: value"
+                int displayLength = line.Label.Length + 2 + line.Value.Length; // "Label: value"
                 totalWrappedLines += Math.Max(1, (int)Math.Ceiling(displayLength / charsPerLine));
             }
 
@@ -290,12 +331,13 @@ namespace BSG.Tools.Services
         /// inline-string run has been observed to make real Excel show a
         /// "we found a problem with some content" repair prompt).
         /// </summary>
-        private static void FillContentRichText(IXLCell cell, List<(string Label, string Value)> lines)
+        private static void FillContentRichText(IXLCell cell, IReadOnlyList<LabelLine> lines)
         {
             var richText = cell.GetRichText();
             for (int i = 0; i < lines.Count; i++)
             {
-                var (label, value) = lines[i];
+                var label = lines[i].Label;
+                var value = lines[i].Value;
                 var prefix = i == 0 ? "" : "\n";
 
                 var labelRun = richText.AddText($"{prefix}{label}: ");

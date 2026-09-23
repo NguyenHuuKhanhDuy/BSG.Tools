@@ -42,6 +42,22 @@
     <!-- Toast -->
     <system:String x:Key="Str_BtnOpenFolder">Open folder</system:String>
 
+    <!-- Preview window -->
+    <system:String x:Key="Str_BtnPreview">Preview</system:String>
+    <system:String x:Key="Str_PreviewWindowTitle">Label preview</system:String>
+    <system:String x:Key="Str_PreviewCountFormat">{0} products will be exported</system:String>
+    <system:String x:Key="Str_PreviewTotalQuantityFormat">Total quantity: {0}</system:String>
+    <system:String x:Key="Str_PreviewFileNameFormat">File name: {0}</system:String>
+    <system:String x:Key="Str_PreviewInvalidQuantityFormat">({0} products have an empty or non-numeric quantity and are not counted)</system:String>
+    <system:String x:Key="Str_PreviewEmptyFieldsFormat">These fields are empty on every label: {0}</system:String>
+    <system:String x:Key="Str_PreviewNoOutputFolder">Choose an output folder in the main window to export.</system:String>
+    <system:String x:Key="Str_PreviewEmptyValue">(empty)</system:String>
+    <system:String x:Key="Str_BtnClose">Close</system:String>
+    <system:String x:Key="Str_PreviewLoadError">Error reading source file: {0}</system:String>
+    <system:String x:Key="Str_ColStt">No.</system:String>
+    <system:String x:Key="Str_ColContent">PRODUCT INFORMATION</system:String>
+    <system:String x:Key="Str_ColQuantity">QUANTITY</system:String>
+
     <!-- Dialogs -->
     <system:String x:Key="Str_Dialog_ChooseSourceFile">Choose source Excel file</system:String>
     <system:String x:Key="Str_Dialog_SaveTemplate">Save template file</system:String>

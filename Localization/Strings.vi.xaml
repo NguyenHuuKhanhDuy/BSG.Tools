@@ -42,6 +42,22 @@
     <!-- Toast -->
     <system:String x:Key="Str_BtnOpenFolder">Mở thư mục</system:String>
 
+    <!-- Preview window -->
+    <system:String x:Key="Str_BtnPreview">Xem trước</system:String>
+    <system:String x:Key="Str_PreviewWindowTitle">Xem trước tem phụ</system:String>
+    <system:String x:Key="Str_PreviewCountFormat">Sẽ xuất {0} sản phẩm</system:String>
+    <system:String x:Key="Str_PreviewTotalQuantityFormat">Tổng số lượng: {0}</system:String>
+    <system:String x:Key="Str_PreviewFileNameFormat">Tên file: {0}</system:String>
+    <system:String x:Key="Str_PreviewInvalidQuantityFormat">({0} sản phẩm có số lượng trống hoặc không phải số, không tính vào tổng)</system:String>
+    <system:String x:Key="Str_PreviewEmptyFieldsFormat">Các trường sau đang trống ở tất cả tem: {0}</system:String>
+    <system:String x:Key="Str_PreviewNoOutputFolder">Chọn thư mục lưu file xuất ở cửa sổ chính để xuất file.</system:String>
+    <system:String x:Key="Str_PreviewEmptyValue">(trống)</system:String>
+    <system:String x:Key="Str_BtnClose">Đóng</system:String>
+    <system:String x:Key="Str_PreviewLoadError">Lỗi khi đọc file nguồn: {0}</system:String>
+    <system:String x:Key="Str_ColStt">STT</system:String>
+    <system:String x:Key="Str_ColContent">THÔNG TIN SẢN PHẨM</system:String>
+    <system:String x:Key="Str_ColQuantity">SỐ LƯỢNG</system:String>
+
     <!-- Dialogs -->
     <system:String x:Key="Str_Dialog_ChooseSourceFile">Chọn file Excel nguồn</system:String>
     <system:String x:Key="Str_Dialog_SaveTemplate">Lưu file mẫu</system:String>
