@@ -64,6 +64,7 @@ jobs:
           -v ${{ steps.get-version.outputs.version }}
           -p publish
           -e BSG.Tools.exe
+          -i Assets/AppIcon.ico
           -o Releases
 
       # Only push a real GitHub Release when this run was triggered by an actual

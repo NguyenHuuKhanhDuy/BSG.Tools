@@ -12,6 +12,9 @@
     <AssemblyName>BSG.Tools</AssemblyName>
     <!-- Local/dev default; CI overrides this per release via `dotnet publish -p:Version=X.Y.Z` from the Git tag -->
     <Version>0.0.1</Version>
+    <!-- Placeholder logo (see Assets/AppIcon.svg). Embedded in the exe; WPF windows without
+         their own Icon (title bar, taskbar, Alt+Tab) use it too. -->
+    <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>

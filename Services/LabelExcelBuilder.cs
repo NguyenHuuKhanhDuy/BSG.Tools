@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using BSG.Tools.Models;
 using ClosedXML.Excel;
 
 namespace BSG.Tools.Services
@@ -31,6 +32,9 @@ namespace BSG.Tools.Services
 
         public string UsageInstructions { get; set; } = "";
         public string StorageInstructions { get; set; } = "";
+
+        /// <summary>Which content lines to write, in order, with their labels. Null means the defaults.</summary>
+        public IReadOnlyList<LabelFieldSetting>? LabelFields { get; set; }
     }
 
     /// <summary>One "Label: value" line in a label's content block.</summary>
@@ -268,22 +272,36 @@ namespace BSG.Tools.Services
                 : opts.ProductionYear;
 
             var lines = new List<LabelLine>();
-            void Add(string label, string value) => lines.Add(new LabelLine { Label = label, Value = value });
-
-            if (opts.IncludeSupplier)
+            foreach (var field in LabelFieldCatalog.Normalize(opts.LabelFields))
             {
-                Add("Nhà cung cấp", opts.SupplierName);
-                Add("Địa chỉ nhà Cung cấp", opts.SupplierAddress);
-            }
+                if (!field.Enabled)
+                    continue;
 
-            Add("Nhập khẩu và phân phối", opts.Importer);
-            Add("Địa chỉ nhà nhập khẩu", opts.ImporterAddress);
-            Add("Tên Sản phẩm", p.Name);
-            Add("Xuất xứ", p.Origin);
-            Add("Thành phần", p.Ingredients);
-            Add("Hướng dẫn sử dụng", opts.UsageInstructions);
-            Add("Cách bảo quản", opts.StorageInstructions);
-            Add("Năm sản xuất", year);
+                // Supplier lines also depend on the "include supplier" checkbox on the export tab.
+                bool isSupplierField = field.Key is LabelFieldCatalog.SupplierName or LabelFieldCatalog.SupplierAddress;
+                if (isSupplierField && !opts.IncludeSupplier)
+                    continue;
+
+                var value = field.Key switch
+                {
+                    LabelFieldCatalog.SupplierName => opts.SupplierName,
+                    LabelFieldCatalog.SupplierAddress => opts.SupplierAddress,
+                    LabelFieldCatalog.Importer => opts.Importer,
+                    LabelFieldCatalog.ImporterAddress => opts.ImporterAddress,
+                    LabelFieldCatalog.ProductName => p.Name,
+                    LabelFieldCatalog.Origin => p.Origin,
+                    LabelFieldCatalog.Ingredients => p.Ingredients,
+                    LabelFieldCatalog.UsageInstructions => opts.UsageInstructions,
+                    LabelFieldCatalog.StorageInstructions => opts.StorageInstructions,
+                    LabelFieldCatalog.ProductionYear => year,
+                    _ => ""
+                };
+
+                var label = string.IsNullOrWhiteSpace(field.Label)
+                    ? LabelFieldCatalog.DefaultLabel(field.Key)
+                    : field.Label.Trim();
+                lines.Add(new LabelLine { Label = label, Value = value });
+            }
 
             return lines;
         }

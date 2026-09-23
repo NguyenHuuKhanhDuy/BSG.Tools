@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -30,9 +31,17 @@ namespace BSG.Tools
         // Re-evaluated on every render so the message follows a language switch.
         private Func<string>? _statusMessage;
 
+        // Edited copy of the label field configuration; only persisted on "Lưu cài đặt".
+        private readonly ObservableCollection<LabelFieldRow> _labelFieldRows = new();
+        // Last saved (or loaded) settings; the Settings tab is compared against it to find unsaved changes.
+        private AppSettings? _savedSettings;
+
         public MainWindow()
         {
             InitializeComponent();
+            LabelFieldList.ItemsSource = _labelFieldRows;
+            // Reordering (drag & drop, Alt+Up/Down) changes positions, which count as unsaved changes.
+            _labelFieldRows.CollectionChanged += (_, _) => UpdateUnsavedState();
             // Theme's palette was already applied at startup (App.xaml.cs); this
             // paints this window's native title bar to match, since that's OS
             // chrome DynamicResource styling can't reach.
@@ -119,6 +128,7 @@ namespace BSG.Tools
                 TxtSourceFile.Text = dialog.FileName;
                 UpdateExportButtonEnabled();
                 UpdatePreviewButtonEnabled();
+                UpdateFileNameExample();
             }
         }
 
@@ -202,7 +212,8 @@ namespace BSG.Tools
                 ImporterAddress = settings.ImporterAddress,
                 ProductionYear = settings.ProductionYear ?? "",
                 UsageInstructions = settings.UsageInstructions,
-                StorageInstructions = settings.StorageInstructions
+                StorageInstructions = settings.StorageInstructions,
+                LabelFields = LabelFieldCatalog.Normalize(settings.LabelFields)
             };
         }
 
@@ -216,12 +227,8 @@ namespace BSG.Tools
         }
 
         // Known from the source file alone, so the preview can show it even before a folder is chosen.
-        private string GetOutputFileName()
-        {
-            var sourceName = Path.GetFileNameWithoutExtension(TxtSourceFile.Text);
-            var dateSuffix = DateTime.Now.ToString("ddMMyyyy");
-            return $"temphu_{sourceName}_{dateSuffix}.xlsx";
-        }
+        private string GetOutputFileName() =>
+            ExportFileNameFormatter.Format(SettingsService.Load().ExportFileNamePattern, TxtSourceFile.Text, DateTime.Now);
 
         private async void BtnExport_Click(object sender, RoutedEventArgs e)
         {
@@ -433,6 +440,7 @@ namespace BSG.Tools
         private void LoadSettingsIntoUi()
         {
             var settings = SettingsService.Load();
+            _savedSettings = settings;
             TxtImporter.Text = settings.Importer;
             TxtImporterAddress.Text = settings.ImporterAddress;
             // Show the current year as a placeholder default, but keep it
@@ -442,6 +450,8 @@ namespace BSG.Tools
                 : settings.ProductionYear;
             TxtUsageInstructions.Text = settings.UsageInstructions;
             TxtStorageInstructions.Text = settings.StorageInstructions;
+            TxtFileNamePattern.Text = settings.ExportFileNamePattern;
+            LoadLabelFieldRows(settings.LabelFields);
 
             // Theme/language were already applied at startup (App.xaml.cs); this
             // just syncs the controls so they reflect the saved preference.
@@ -454,6 +464,8 @@ namespace BSG.Tools
                     break;
                 }
             }
+
+            UpdateUnsavedState();
         }
 
         private void BtnSaveSettings_Click(object sender, RoutedEventArgs e)
@@ -465,11 +477,15 @@ namespace BSG.Tools
                 ProductionYear = TxtProductionYear.Text.Trim(),
                 UsageInstructions = TxtUsageInstructions.Text.Trim(),
                 StorageInstructions = TxtStorageInstructions.Text.Trim(),
+                ExportFileNamePattern = TxtFileNamePattern.Text.Trim(),
+                LabelFields = _labelFieldRows.Select(r => r.ToSetting()).ToList(),
                 Theme = ChkDarkMode.IsChecked == true ? ThemeManager.Dark : ThemeManager.Light,
                 Language = CurrentLanguageTag()
             };
 
             SettingsService.Save(settings);
+            _savedSettings = settings;
+            UpdateUnsavedState();
             _lastSuccessfulOutputPath = null;
             ClearStatus();
             ShowToast(LocalizationManager.GetString("Str_SettingsSaved"), showOpenFolder: false);
@@ -497,8 +513,9 @@ namespace BSG.Tools
 
             var language = CurrentLanguageTag();
             LocalizationManager.Apply(language);
-            // Status text is set from code, so it doesn't follow DynamicResource on its own.
+            // Status and file name example are set from code, so they don't follow DynamicResource on their own.
             RenderStatus();
+            UpdateFileNameExample();
 
             // Persisted immediately (not gated behind "Lưu cài đặt") since this is
             // an app-wide display preference, not label content — same as dark mode.
@@ -540,14 +557,266 @@ namespace BSG.Tools
                 Language = CurrentLanguageTag()
             };
             SettingsService.Save(defaults);
+            _savedSettings = defaults;
 
             TxtImporter.Text = defaults.Importer;
             TxtImporterAddress.Text = defaults.ImporterAddress;
             TxtProductionYear.Text = DateTime.Now.Year.ToString();
             TxtUsageInstructions.Text = defaults.UsageInstructions;
             TxtStorageInstructions.Text = defaults.StorageInstructions;
+            TxtFileNamePattern.Text = defaults.ExportFileNamePattern;
+            LoadLabelFieldRows(defaults.LabelFields);
+            UpdateUnsavedState();
 
             ShowToast(LocalizationManager.GetString("Str_DefaultsRestored"), showOpenFolder: false);
+        }
+
+        // ---------------- Unsaved changes (Cài đặt tab) ----------------
+
+        private void SettingsField_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e) =>
+            UpdateUnsavedState();
+
+        private void LabelFieldRow_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            // IsModified/IsDragging are set by this tracking and by drag & drop; reacting to them would loop.
+            if (e.PropertyName is nameof(LabelFieldRow.Enabled) or nameof(LabelFieldRow.Label))
+                UpdateUnsavedState();
+        }
+
+        /// <summary>
+        /// Compares every Settings-tab field with the last saved settings: marks the ones that
+        /// differ and enables "Lưu cài đặt" only when at least one does. Dark mode and language
+        /// save themselves immediately, so they are not part of this.
+        /// </summary>
+        private void UpdateUnsavedState()
+        {
+            if (_savedSettings is not { } saved)
+                return;
+
+            // A blank saved year is shown as the current year, so that is what "unchanged" looks like.
+            var savedYear = string.IsNullOrWhiteSpace(saved.ProductionYear) ? DateTime.Now.Year.ToString() : saved.ProductionYear;
+
+            bool unsaved = false;
+            unsaved |= MarkModified(TxtImporter, saved.Importer);
+            unsaved |= MarkModified(TxtImporterAddress, saved.ImporterAddress);
+            unsaved |= MarkModified(TxtProductionYear, savedYear);
+            unsaved |= MarkModified(TxtUsageInstructions, saved.UsageInstructions);
+            unsaved |= MarkModified(TxtStorageInstructions, saved.StorageInstructions);
+            unsaved |= MarkModified(TxtFileNamePattern, saved.ExportFileNamePattern);
+
+            var savedFields = LabelFieldCatalog.Normalize(saved.LabelFields);
+            for (int i = 0; i < _labelFieldRows.Count; i++)
+            {
+                var row = _labelFieldRows[i];
+                var savedIndex = savedFields.FindIndex(f => f.Key == row.Key);
+                row.IsModified = savedIndex != i
+                    || savedFields[savedIndex].Enabled != row.Enabled
+                    || savedFields[savedIndex].Label.Trim() != row.Label.Trim();
+                unsaved |= row.IsModified;
+            }
+
+            BtnSaveSettings.IsEnabled = unsaved;
+        }
+
+        // Values are trimmed on save, so surrounding whitespace alone doesn't count as a change.
+        private static bool MarkModified(System.Windows.Controls.TextBox box, string? savedValue)
+        {
+            var modified = box.Text.Trim() != (savedValue ?? "").Trim();
+            ModifiedState.SetIsModified(box, modified);
+            return modified;
+        }
+
+        // ---------------- Export format (Cài đặt tab) ----------------
+
+        private void LoadLabelFieldRows(IEnumerable<LabelFieldSetting>? fields)
+        {
+            foreach (var old in _labelFieldRows)
+                old.PropertyChanged -= LabelFieldRow_PropertyChanged;
+            _labelFieldRows.Clear();
+
+            foreach (var field in LabelFieldCatalog.Normalize(fields))
+            {
+                var row = new LabelFieldRow(field);
+                row.PropertyChanged += LabelFieldRow_PropertyChanged;
+                _labelFieldRows.Add(row);
+            }
+        }
+
+        // Keyboard alternative to drag & drop: Alt+Up / Alt+Down moves the row that has focus.
+        private void LabelFieldList_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            // With Alt held, WPF reports the arrow in SystemKey and Key is Key.System.
+            if (e.Key != Key.System || (e.SystemKey != Key.Up && e.SystemKey != Key.Down))
+                return;
+            if ((e.OriginalSource as FrameworkElement)?.DataContext is not LabelFieldRow row)
+                return;
+
+            e.Handled = true;
+            var from = _labelFieldRows.IndexOf(row);
+            var to = from + (e.SystemKey == Key.Up ? -1 : 1);
+            if (from < 0 || to < 0 || to >= _labelFieldRows.Count)
+                return;
+
+            var focusedType = e.OriginalSource.GetType();
+            _labelFieldRows.Move(from, to);
+
+            // The moved row's container is regenerated, so put focus back on the same kind of
+            // control (label box or checkbox) in its new position once layout has caught up.
+            Dispatcher.BeginInvoke(DispatcherPriority.Loaded, () =>
+            {
+                if (LabelFieldList.ItemContainerGenerator.ContainerFromIndex(to) is DependencyObject container)
+                    FindDescendant(container, focusedType)?.Focus();
+            });
+        }
+
+        private static UIElement? FindDescendant(DependencyObject parent, Type type)
+        {
+            for (int i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i);
+                if (child is UIElement element && type.IsInstanceOfType(child))
+                    return element;
+                if (FindDescendant(child, type) is { } found)
+                    return found;
+            }
+            return null;
+        }
+
+        // ---- Drag & drop reordering ----
+
+        private System.Windows.Point _dragStart;
+        private LabelFieldRow? _dragCandidate;
+
+        // Pressing the grip only arms the drag; movement is tracked on the whole list so a quick
+        // drag that leaves the narrow grip before crossing the drag threshold still starts.
+        private void FieldGrip_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            _dragStart = e.GetPosition(LabelFieldList);
+            _dragCandidate = (sender as FrameworkElement)?.DataContext as LabelFieldRow;
+        }
+
+        private void LabelFieldList_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e) =>
+            _dragCandidate = null;
+
+        private void LabelFieldList_PreviewMouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            if (_dragCandidate is null || e.LeftButton != MouseButtonState.Pressed)
+                return;
+
+            var delta = e.GetPosition(LabelFieldList) - _dragStart;
+            if (Math.Abs(delta.X) < SystemParameters.MinimumHorizontalDragDistance
+                && Math.Abs(delta.Y) < SystemParameters.MinimumVerticalDragDistance)
+                return;
+
+            var row = _dragCandidate;
+            _dragCandidate = null;
+            row.IsDragging = true;
+            try
+            {
+                // Blocks until the drop (or cancel); DragOver/Drop below do the work meanwhile.
+                System.Windows.DragDrop.DoDragDrop(LabelFieldList,
+                    new System.Windows.DataObject(typeof(LabelFieldRow), row), System.Windows.DragDropEffects.Move);
+            }
+            finally
+            {
+                row.IsDragging = false;
+                FieldDropIndicator.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private void LabelFieldList_DragOver(object sender, System.Windows.DragEventArgs e)
+        {
+            e.Handled = true;
+            if (!e.Data.GetDataPresent(typeof(LabelFieldRow)))
+            {
+                e.Effects = System.Windows.DragDropEffects.None;
+                return;
+            }
+
+            e.Effects = System.Windows.DragDropEffects.Move;
+            ShowDropIndicator(GetDropIndex(e));
+        }
+
+        private void LabelFieldList_Drop(object sender, System.Windows.DragEventArgs e)
+        {
+            FieldDropIndicator.Visibility = Visibility.Collapsed;
+            if (e.Data.GetData(typeof(LabelFieldRow)) is not LabelFieldRow row)
+                return;
+
+            e.Handled = true;
+            var from = _labelFieldRows.IndexOf(row);
+            var to = GetDropIndex(e);
+            // The insertion index counts the dragged row itself; removing it first shifts later slots up by one.
+            if (to > from)
+                to--;
+            if (from < 0 || to == from)
+                return;
+
+            _labelFieldRows.Move(from, to);
+        }
+
+        private void LabelFieldList_DragLeave(object sender, System.Windows.DragEventArgs e) =>
+            FieldDropIndicator.Visibility = Visibility.Collapsed;
+
+        // Scrolls the Settings tab while dragging near its top/bottom edge, since the list is taller than the viewport.
+        private void SettingsScroll_PreviewDragOver(object sender, System.Windows.DragEventArgs e)
+        {
+            const double edge = 36;
+            var y = e.GetPosition(SettingsScroll).Y;
+            if (y < edge)
+                SettingsScroll.LineUp();
+            else if (y > SettingsScroll.ActualHeight - edge)
+                SettingsScroll.LineDown();
+        }
+
+        /// <summary>Insertion slot under the mouse: before the first row whose upper half is below it, else the end.</summary>
+        private int GetDropIndex(System.Windows.DragEventArgs e)
+        {
+            for (int i = 0; i < _labelFieldRows.Count; i++)
+            {
+                if (LabelFieldList.ItemContainerGenerator.ContainerFromIndex(i) is FrameworkElement container
+                    && e.GetPosition(container).Y < container.ActualHeight / 2)
+                    return i;
+            }
+            return _labelFieldRows.Count;
+        }
+
+        private void ShowDropIndicator(int index)
+        {
+            // Rows are 8px apart (bottom margin); centre the line in that gap.
+            const double gapCentre = 4;
+            double y;
+            if (index < _labelFieldRows.Count
+                && LabelFieldList.ItemContainerGenerator.ContainerFromIndex(index) is FrameworkElement next)
+            {
+                y = next.TranslatePoint(new System.Windows.Point(0, 0), LabelFieldList).Y - gapCentre;
+            }
+            else if (LabelFieldList.ItemContainerGenerator.ContainerFromIndex(_labelFieldRows.Count - 1) is FrameworkElement last)
+            {
+                y = last.TranslatePoint(new System.Windows.Point(0, last.ActualHeight), LabelFieldList).Y - gapCentre;
+            }
+            else
+            {
+                return;
+            }
+
+            System.Windows.Controls.Canvas.SetTop(FieldDropIndicator, y - FieldDropIndicator.Height / 2);
+            FieldDropIndicator.Width = LabelFieldList.ActualWidth;
+            FieldDropIndicator.Visibility = Visibility.Visible;
+        }
+
+        private void TxtFileNamePattern_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        {
+            UpdateFileNameExample();
+            UpdateUnsavedState();
+        }
+
+        // Previews the pattern being typed (not the saved one), with the chosen source file if any.
+        private void UpdateFileNameExample()
+        {
+            var source = File.Exists(TxtSourceFile.Text) ? TxtSourceFile.Text : "DanhSachSanPham.xlsx";
+            var fileName = ExportFileNameFormatter.Format(TxtFileNamePattern.Text, source, DateTime.Now);
+            TxtFileNameExample.Text = string.Format(LocalizationManager.GetString("Str_FileNameExampleFormat"), fileName);
         }
     }
 }

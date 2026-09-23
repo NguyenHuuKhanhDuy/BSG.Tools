@@ -37,6 +37,8 @@
     <SolidColorBrush x:Key="BrushFieldLabel" Color="#C3C7CF"/>
     <SolidColorBrush x:Key="BrushStatusBarBackground" Color="#222328"/>
     <SolidColorBrush x:Key="BrushStatusBusy" Color="#4C8DFF"/>
+    <!-- Bar on inputs whose value differs from the last saved settings. -->
+    <SolidColorBrush x:Key="BrushModified" Color="#F2C94C"/>
     <DropShadowEffect x:Key="EffectCardShadow" Color="#000000" BlurRadius="14" ShadowDepth="2"
                       Direction="270" Opacity="0.25"/>
 

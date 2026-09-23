@@ -27,6 +27,13 @@
     <system:String x:Key="Str_ProductionYearLabel">Năm sản xuất (mặc định lấy năm hiện tại nếu để trống)</system:String>
     <system:String x:Key="Str_UsageInstructionsSection">Hướng dẫn sử dụng</system:String>
     <system:String x:Key="Str_StorageInstructionsLabel">Cách bảo quản</system:String>
+    <system:String x:Key="Str_FileNamePatternLabel">Mẫu tên file xuất</system:String>
+    <system:String x:Key="Str_FileNamePatternHint">Dùng {source} cho tên file nguồn, {date} cho ngày xuất (ddMMyyyy), hoặc {date:yyyy-MM-dd} để tự chọn định dạng ngày. Đuôi .xlsx được thêm tự động.</system:String>
+    <system:String x:Key="Str_FileNameExampleFormat">Ví dụ: {0}</system:String>
+    <system:String x:Key="Str_LabelContentLabel">Nội dung tem</system:String>
+    <system:String x:Key="Str_LabelContentHint">Bỏ tick để ẩn trường, sửa tên nhãn trực tiếp. Kéo biểu tượng ⋮⋮ ở đầu dòng (hoặc bấm Alt + ↑/↓ khi đang ở trong dòng) để đổi thứ tự. Để trống tên nhãn sẽ dùng tên mặc định. Hai trường nhà cung cấp chỉ hiện khi tick "Bao gồm thông tin Nhà cung cấp" ở tab Xuất file.</system:String>
+    <system:String x:Key="Str_FieldEnabledTooltip">Hiện trường này trên tem</system:String>
+    <system:String x:Key="Str_DragToReorder">Kéo để đổi thứ tự (hoặc Alt + ↑/↓)</system:String>
     <system:String x:Key="Str_LanguageLabel">Ngôn ngữ</system:String>
     <system:String x:Key="Str_ChkDarkMode">Chế độ tối</system:String>
     <system:String x:Key="Str_BtnSaveSettings">Lưu cài đặt</system:String>

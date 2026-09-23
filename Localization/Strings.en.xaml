@@ -27,6 +27,13 @@
     <system:String x:Key="Str_ProductionYearLabel">Production year (defaults to the current year if left blank)</system:String>
     <system:String x:Key="Str_UsageInstructionsSection">Usage instructions</system:String>
     <system:String x:Key="Str_StorageInstructionsLabel">Storage instructions</system:String>
+    <system:String x:Key="Str_FileNamePatternLabel">Export file name pattern</system:String>
+    <system:String x:Key="Str_FileNamePatternHint">Use {source} for the source file name, {date} for the export date (ddMMyyyy), or {date:yyyy-MM-dd} to pick your own date format. The .xlsx extension is added automatically.</system:String>
+    <system:String x:Key="Str_FileNameExampleFormat">Example: {0}</system:String>
+    <system:String x:Key="Str_LabelContentLabel">Label content</system:String>
+    <system:String x:Key="Str_LabelContentHint">Untick to hide a field, edit its label directly. Drag the ⋮⋮ handle at the start of a row (or press Alt + ↑/↓ while in a row) to reorder. An empty label falls back to the default one. The two supplier fields only appear when "Include supplier information" is ticked on the Export tab.</system:String>
+    <system:String x:Key="Str_FieldEnabledTooltip">Show this field on the label</system:String>
+    <system:String x:Key="Str_DragToReorder">Drag to reorder (or Alt + ↑/↓)</system:String>
     <system:String x:Key="Str_LanguageLabel">Language</system:String>
     <system:String x:Key="Str_ChkDarkMode">Dark mode</system:String>
     <system:String x:Key="Str_BtnSaveSettings">Save settings</system:String>
