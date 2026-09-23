@@ -24,7 +24,7 @@
 
         <Border x:Name="WarningBanner" Grid.Row="1" Visibility="Collapsed" Margin="0,0,0,12"
                 Background="{DynamicResource BrushWarningBackground}" BorderBrush="{DynamicResource BrushWarningBorder}"
-                BorderThickness="1" CornerRadius="8" Padding="12,8">
+                BorderThickness="1" CornerRadius="{StaticResource RadiusControl}" Padding="12,8">
             <TextBlock x:Name="TxtWarning" TextWrapping="Wrap" Foreground="{DynamicResource BrushWarningText}"/>
         </Border>
 
@@ -32,15 +32,15 @@
         <!-- Mirrors the exported sheet: STT | bordered content block (bold centered
              title + "Label: value" lines) | SL. Only content and order are meant to
              match Excel; wrapping/heights are approximate. -->
-        <Border Grid.Row="2" Background="{DynamicResource BrushCardBackground}" BorderBrush="{DynamicResource BrushBorder}"
-                BorderThickness="1" CornerRadius="8">
+        <!-- Inner rows carry their own margins, so the card's padding/margin are reset. -->
+        <Border Grid.Row="2" Style="{StaticResource CardStyle}" Padding="0" Margin="0">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <Grid Grid.Row="0" Margin="16,12,24,8">
+                <Grid Grid.Row="0" Margin="20,16,28,8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="48"/>
                         <ColumnDefinition Width="*"/>
@@ -58,7 +58,7 @@
                     <ItemsControl.Template>
                         <ControlTemplate TargetType="ItemsControl">
                             <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
-                                          CanContentScroll="True" Padding="16,0,16,16">
+                                          CanContentScroll="True" Padding="20,0,20,20">
                                 <ItemsPresenter/>
                             </ScrollViewer>
                         </ControlTemplate>

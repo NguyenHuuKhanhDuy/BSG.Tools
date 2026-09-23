@@ -1,7 +1,7 @@
 <Window x:Class="BSG.Tools.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="{DynamicResource Str_WindowTitle}" Height="580" Width="620"
+        Title="{DynamicResource Str_WindowTitle}" Height="720" Width="640"
         MinHeight="670" MinWidth="560"
         WindowStartupLocation="CenterScreen"
         Style="{DynamicResource {x:Type Window}}">
@@ -12,63 +12,68 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <TabControl Grid.Row="0">
+        <TabControl x:Name="MainTabs" Grid.Row="0" PreviewMouseLeftButtonDown="MainTabs_PreviewMouseLeftButtonDown">
 
             <!-- ===================== TAB: XUẤT FILE ===================== -->
             <TabItem Header="{DynamicResource Str_Tab_Export}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                <StackPanel Margin="0,16,0,16">
+                <!-- Horizontal margin leaves room for the card shadows inside the ScrollViewer's clip. -->
+                <StackPanel Margin="6,20,6,8">
 
-                    <Border Background="{DynamicResource BrushCardBackground}" BorderBrush="{DynamicResource BrushBorder}"
-                            BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,16">
+                    <Border Style="{StaticResource CardStyle}">
                         <StackPanel>
-                            <DockPanel Margin="0,0,0,8">
+                            <DockPanel Margin="{StaticResource SpacingLabel}">
                                 <Button x:Name="BtnDownloadTemplate" Content="{DynamicResource Str_BtnDownloadTemplate}"
                                         DockPanel.Dock="Right" Style="{StaticResource LinkButtonStyle}"
                                         VerticalAlignment="Center" Click="BtnDownloadTemplate_Click"/>
-                                <TextBlock Text="{DynamicResource Str_SourceFileSection}" Style="{StaticResource SectionTitleStyle}"/>
+                                <TextBlock Text="{DynamicResource Str_SourceFileSection}" Style="{StaticResource FieldLabelStyle}"
+                                           Margin="0" VerticalAlignment="Center"/>
                             </DockPanel>
-                            <DockPanel Margin="0,0,0,16">
-                                <Button x:Name="BtnChooseFile" Content="{DynamicResource Str_BtnChooseFile}" Width="110"
-                                        DockPanel.Dock="Right" Margin="8,0,0,0" Click="BtnChooseFile_Click"/>
+                            <DockPanel Margin="{StaticResource SpacingField}">
+                                <Button x:Name="BtnChooseFile" Content="{DynamicResource Str_BtnChooseFile}" Width="120"
+                                        DockPanel.Dock="Right" Margin="10,0,0,0" Click="BtnChooseFile_Click"/>
                                 <TextBox x:Name="TxtSourceFile" IsReadOnly="True" VerticalContentAlignment="Center"
                                          Style="{StaticResource ReadOnlyPathTextBoxStyle}" Tag="{DynamicResource Str_NoFileChosen}"/>
                             </DockPanel>
 
-                            <TextBlock Text="{DynamicResource Str_OutputFolderSection}" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                            <TextBlock Text="{DynamicResource Str_OutputFolderSection}" Style="{StaticResource FieldLabelStyle}"/>
                             <DockPanel>
-                                <Button x:Name="BtnChooseFolder" Content="{DynamicResource Str_BtnChooseFolder}" Width="110"
-                                        DockPanel.Dock="Right" Margin="8,0,0,0" Click="BtnChooseFolder_Click"/>
+                                <Button x:Name="BtnChooseFolder" Content="{DynamicResource Str_BtnChooseFolder}" Width="120"
+                                        DockPanel.Dock="Right" Margin="10,0,0,0" Click="BtnChooseFolder_Click"/>
                                 <TextBox x:Name="TxtOutputFolder" IsReadOnly="True" VerticalContentAlignment="Center"
                                          Style="{StaticResource ReadOnlyPathTextBoxStyle}" Tag="{DynamicResource Str_NoFolderChosen}"/>
                             </DockPanel>
                         </StackPanel>
                     </Border>
 
-                    <Border Background="{DynamicResource BrushCardBackground}" BorderBrush="{DynamicResource BrushBorder}"
-                            BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,16">
+                    <Border Style="{StaticResource CardStyle}">
                         <StackPanel>
                             <CheckBox x:Name="ChkIncludeSupplier" Content="{DynamicResource Str_ChkIncludeSupplier}"
-                                      Margin="0,0,0,12" Checked="ChkIncludeSupplier_Changed" Unchecked="ChkIncludeSupplier_Changed"/>
+                                      Margin="{StaticResource SpacingField}"
+                                      Checked="ChkIncludeSupplier_Changed" Unchecked="ChkIncludeSupplier_Changed"/>
 
-                            <TextBlock x:Name="LblSupplierName" Text="{DynamicResource Str_SupplierName}" Style="{StaticResource SupplierSectionTitleStyle}" Margin="0,0,0,8"/>
-                            <TextBox x:Name="TxtSupplierName" Margin="0,0,0,12"/>
+                            <TextBlock x:Name="LblSupplierName" Text="{DynamicResource Str_SupplierName}" Style="{StaticResource SupplierFieldLabelStyle}"/>
+                            <TextBox x:Name="TxtSupplierName" Margin="{StaticResource SpacingField}"/>
 
-                            <TextBlock x:Name="LblSupplierAddress" Text="{DynamicResource Str_SupplierAddress}" Style="{StaticResource SupplierFieldLabelStyle}" Margin="0,0,0,8"/>
+                            <TextBlock x:Name="LblSupplierAddress" Text="{DynamicResource Str_SupplierAddress}" Style="{StaticResource SupplierFieldLabelStyle}"/>
                             <TextBox x:Name="TxtSupplierAddress"/>
                         </StackPanel>
                     </Border>
 
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="140"/>
+                            <ColumnDefinition Width="150"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <Button x:Name="BtnPreview" Grid.Column="0" Content="{DynamicResource Str_BtnPreview}" Height="38" FontSize="14"
-                                Margin="0,0,8,0" Click="BtnPreview_Click"/>
-                        <Button x:Name="BtnExport" Grid.Column="1" Content="{DynamicResource Str_BtnExport}" Height="38" FontSize="14"
-                                Style="{StaticResource AccentButtonStyle}"
-                                Click="BtnExport_Click"/>
+                        <Border Grid.Column="0" Style="{StaticResource DisabledCursorHostStyle}" Margin="0,0,10,0">
+                            <Button x:Name="BtnPreview" Content="{DynamicResource Str_BtnPreview}" Height="40" FontSize="14"
+                                    Click="BtnPreview_Click"/>
+                        </Border>
+                        <Border Grid.Column="1" Style="{StaticResource DisabledCursorHostStyle}">
+                            <Button x:Name="BtnExport" Content="{DynamicResource Str_BtnExport}" Height="40" FontSize="14"
+                                    Style="{StaticResource AccentButtonStyle}"
+                                    Click="BtnExport_Click"/>
+                        </Border>
                     </Grid>
                 </StackPanel>
                 </ScrollViewer>
@@ -76,52 +81,49 @@
 
             <!-- ===================== TAB: CÀI ĐẶT ===================== -->
             <TabItem Header="{DynamicResource Str_Tab_Settings}">
-                <Grid Margin="0,16,0,16">
+                <Grid Margin="0,20,0,4">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
                     <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                    <StackPanel Margin="0,0,0,16">
+                    <StackPanel Margin="6,0,6,0">
 
-                        <Border Background="{DynamicResource BrushCardBackground}" BorderBrush="{DynamicResource BrushBorder}"
-                                BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,16">
+                        <Border Style="{StaticResource CardStyle}">
                             <StackPanel>
-                                <TextBlock Text="{DynamicResource Str_ImporterSection}" Style="{StaticResource SectionTitleStyle}" Margin="0,0,0,8"/>
-                                <TextBox x:Name="TxtImporter" Margin="0,0,0,12"/>
+                                <TextBlock Text="{DynamicResource Str_ImporterSection}" Style="{StaticResource FieldLabelStyle}"/>
+                                <TextBox x:Name="TxtImporter" Margin="{StaticResource SpacingField}"/>
 
-                                <TextBlock Text="{DynamicResource Str_ImporterAddress}" Foreground="{DynamicResource BrushTextSecondary}" Margin="0,0,0,8"/>
-                                <TextBox x:Name="TxtImporterAddress" Margin="0,0,0,12"/>
+                                <TextBlock Text="{DynamicResource Str_ImporterAddress}" Style="{StaticResource FieldLabelStyle}"/>
+                                <TextBox x:Name="TxtImporterAddress" Margin="{StaticResource SpacingField}"/>
 
-                                <TextBlock Text="{DynamicResource Str_ProductionYearLabel}"
-                                           Foreground="{DynamicResource BrushTextSecondary}" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                                <TextBlock Text="{DynamicResource Str_ProductionYearLabel}" Style="{StaticResource FieldLabelStyle}"/>
                                 <TextBox x:Name="TxtProductionYear" MaxLength="4"
                                          PreviewTextInput="TxtProductionYear_PreviewTextInput"
                                          DataObject.Pasting="TxtProductionYear_Pasting"/>
                             </StackPanel>
                         </Border>
 
-                        <Border Background="{DynamicResource BrushCardBackground}" BorderBrush="{DynamicResource BrushBorder}"
-                                BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,16">
+                        <Border Style="{StaticResource CardStyle}">
                             <StackPanel>
-                                <TextBlock Text="{DynamicResource Str_UsageInstructionsSection}" Style="{StaticResource SectionTitleStyle}" Margin="0,0,0,8"/>
-                                <TextBox x:Name="TxtUsageInstructions" Margin="0,0,0,12"
-                                         AcceptsReturn="True" TextWrapping="Wrap" Height="70"
+                                <TextBlock Text="{DynamicResource Str_UsageInstructionsSection}" Style="{StaticResource FieldLabelStyle}"/>
+                                <TextBox x:Name="TxtUsageInstructions" Margin="{StaticResource SpacingField}"
+                                         AcceptsReturn="True" TextWrapping="Wrap" Height="76"
                                          VerticalScrollBarVisibility="Auto" VerticalContentAlignment="Top"/>
 
-                                <TextBlock Text="{DynamicResource Str_StorageInstructionsLabel}" Foreground="{DynamicResource BrushTextSecondary}" Margin="0,0,0,8"/>
+                                <TextBlock Text="{DynamicResource Str_StorageInstructionsLabel}" Style="{StaticResource FieldLabelStyle}"/>
                                 <TextBox x:Name="TxtStorageInstructions"
-                                         AcceptsReturn="True" TextWrapping="Wrap" Height="70"
+                                         AcceptsReturn="True" TextWrapping="Wrap" Height="76"
                                          VerticalScrollBarVisibility="Auto" VerticalContentAlignment="Top"/>
                             </StackPanel>
                         </Border>
                     </StackPanel>
                     </ScrollViewer>
 
-                    <DockPanel Grid.Row="1" Margin="0,16,0,0">
+                    <DockPanel Grid.Row="1" Margin="6,4,6,0">
                         <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Center">
-                            <ComboBox x:Name="CmbLanguage" Width="120" Margin="0,0,16,0" VerticalAlignment="Center"
+                            <ComboBox x:Name="CmbLanguage" Width="130" Margin="0,0,16,0" VerticalAlignment="Center"
                                       SelectionChanged="CmbLanguage_SelectionChanged">
                                 <ComboBoxItem Content="Tiếng Việt" Tag="vi"/>
                                 <ComboBoxItem Content="English" Tag="en"/>
@@ -131,11 +133,11 @@
                                       Checked="ChkDarkMode_Changed" Unchecked="ChkDarkMode_Changed"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal">
-                            <Button x:Name="BtnSaveSettings" Content="{DynamicResource Str_BtnSaveSettings}" Height="36" Width="160"
+                            <Button x:Name="BtnSaveSettings" Content="{DynamicResource Str_BtnSaveSettings}" Height="38" Width="160"
                                     HorizontalAlignment="Left" Style="{StaticResource AccentButtonStyle}"
                                     Click="BtnSaveSettings_Click"/>
-                            <Button x:Name="BtnRestoreDefaults" Content="{DynamicResource Str_BtnRestoreDefaults}" Height="36"
-                                    HorizontalAlignment="Left" Margin="8,0,0,0" Padding="12,6"
+                            <Button x:Name="BtnRestoreDefaults" Content="{DynamicResource Str_BtnRestoreDefaults}" Height="38"
+                                    HorizontalAlignment="Left" Margin="10,0,0,0"
                                     Click="BtnRestoreDefaults_Click"/>
                         </StackPanel>
                     </DockPanel>
@@ -147,8 +149,8 @@
         <!-- ===================== UPDATE BANNER / TOAST ===================== -->
         <StackPanel Grid.Row="1">
             <Border x:Name="UpdateBanner" Visibility="Collapsed" Margin="0,14,0,0"
-                    Background="{DynamicResource BrushSecondaryButton}" BorderBrush="{DynamicResource BrushAccent}"
-                    BorderThickness="1" CornerRadius="8" Padding="12,8">
+                    Background="{DynamicResource BrushAccentSubtle}" BorderBrush="{DynamicResource BrushAccent}"
+                    BorderThickness="1" CornerRadius="{StaticResource RadiusControl}" Padding="12,8">
                 <DockPanel>
                     <Button x:Name="BtnUpdateNow" Content="{DynamicResource Str_BtnUpdateNow}" DockPanel.Dock="Right"
                             Style="{StaticResource AccentButtonStyle}" Margin="12,0,0,0" Click="BtnUpdateNow_Click"/>
@@ -158,22 +160,29 @@
             </Border>
 
             <Border x:Name="Toast" Visibility="Collapsed" Margin="0,14,0,0"
-                    Background="{DynamicResource BrushSecondaryButton}" BorderBrush="{DynamicResource BrushStatusSuccess}"
-                    BorderThickness="1" CornerRadius="8" Padding="12,8">
+                    Background="{DynamicResource BrushCardBackground}" BorderBrush="{DynamicResource BrushStatusSuccess}"
+                    BorderThickness="1" CornerRadius="{StaticResource RadiusControl}" Padding="12,8">
                 <DockPanel>
                     <Button x:Name="BtnToastOpenFolder" Content="{DynamicResource Str_BtnOpenFolder}" DockPanel.Dock="Right"
-                            Margin="12,0,0,0" Padding="10,6" Click="BtnToastOpenFolder_Click"/>
+                            Margin="12,0,0,0" Click="BtnToastOpenFolder_Click"/>
                     <TextBlock x:Name="TxtToastMessage" VerticalAlignment="Center" TextWrapping="Wrap"/>
                 </DockPanel>
             </Border>
         </StackPanel>
 
         <!-- ===================== STATUS BAR ===================== -->
-        <DockPanel Grid.Row="2" Margin="0,14,0,0">
-            <TextBlock x:Name="TxtVersion" DockPanel.Dock="Right" Margin="12,0,0,0" VerticalAlignment="Center"
-                       Foreground="{DynamicResource BrushTextSecondary}"/>
-            <TextBlock x:Name="TxtStatus" TextWrapping="Wrap" FontWeight="SemiBold"
-                       MouseLeftButtonUp="TxtStatus_MouseLeftButtonUp"/>
-        </DockPanel>
+        <!-- TxtStatus text/colour and StatusDot colour are driven by SetStatus() in code-behind. -->
+        <Border Grid.Row="2" Margin="0,14,0,0" Padding="12,7" CornerRadius="{StaticResource RadiusControl}"
+                Background="{DynamicResource BrushStatusBarBackground}">
+            <DockPanel>
+                <TextBlock x:Name="TxtVersion" DockPanel.Dock="Right" Margin="12,0,0,0" VerticalAlignment="Center"
+                           FontSize="12" Foreground="{DynamicResource BrushTextSecondary}"/>
+                <Ellipse x:Name="StatusDot" Width="8" Height="8" Margin="0,0,8,0" VerticalAlignment="Center"
+                         Fill="{DynamicResource BrushTextSecondary}"/>
+                <TextBlock x:Name="TxtStatus" TextWrapping="Wrap" FontSize="12" FontWeight="SemiBold"
+                           VerticalAlignment="Center"
+                           MouseLeftButtonUp="TxtStatus_MouseLeftButtonUp"/>
+            </DockPanel>
+        </Border>
     </Grid>
 </Window>

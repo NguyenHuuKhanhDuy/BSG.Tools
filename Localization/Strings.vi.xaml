@@ -77,4 +77,10 @@
     <system:String x:Key="Str_RestoreDefaultsTitle">Khôi phục mặc định</system:String>
     <system:String x:Key="Str_DefaultsRestored">Đã khôi phục mặc định.</system:String>
 
+    <!-- Status bar -->
+    <system:String x:Key="Str_StatusReady">Sẵn sàng</system:String>
+    <system:String x:Key="Str_StatusReading">Đang đọc file…</system:String>
+    <system:String x:Key="Str_StatusExporting">Đang xuất file…</system:String>
+    <system:String x:Key="Str_StatusExported">Đã xuất {0} nhãn</system:String>
+
 </ResourceDictionary>

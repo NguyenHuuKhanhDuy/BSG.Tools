@@ -100,7 +100,6 @@ namespace BSG.Tools.Services
             using var workbook = new XLWorkbook();
             var ws = workbook.Worksheets.Add("Nhãn sản phẩm");
 
-            // Column widths
             ws.Column(SttCol).Width = 6;
             for (int c = ContentStartCol; c <= ContentEndCol; c++)
                 ws.Column(c).Width = 16;
@@ -159,7 +158,6 @@ namespace BSG.Tools.Services
                 int titleRow = currentRow;
                 int contentRow = currentRow + 1;
 
-                // STT (merged across title+content rows, no border, no fill)
                 var sttRange = ws.Range(titleRow, SttCol, contentRow, SttCol).Merge();
                 ws.Cell(titleRow, SttCol).Value = label.Stt;
                 sttRange.Style.Font.FontName = FontName;
@@ -167,7 +165,6 @@ namespace BSG.Tools.Services
                 sttRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
                 sttRange.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
 
-                // Title cell (product name, bold, centered)
                 var titleRange = ws.Range(titleRow, ContentStartCol, titleRow, ContentEndCol).Merge();
                 var titleCell = ws.Cell(titleRow, ContentStartCol);
                 titleCell.Value = label.Title;
@@ -178,7 +175,6 @@ namespace BSG.Tools.Services
                 titleRange.Style.Alignment.WrapText = true;
                 titleRange.Style.Fill.BackgroundColor = XLColor.White; // hides the seam gridline
 
-                // Content cell (field list, rich text: bold labels + normal values)
                 var contentRange = ws.Range(contentRow, ContentStartCol, contentRow, ContentEndCol).Merge();
                 var contentCell = ws.Cell(contentRow, ContentStartCol);
                 contentRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Left;
@@ -187,7 +183,6 @@ namespace BSG.Tools.Services
                 contentRange.Style.Fill.BackgroundColor = XLColor.White; // hides the seam gridline
                 FillContentRichText(contentCell, label.Lines);
 
-                // SL (merged across title+content rows, no border, no fill)
                 var slRange = ws.Range(titleRow, SlCol, contentRow, SlCol).Merge();
                 ws.Cell(titleRow, SlCol).Value = label.Quantity;
                 slRange.Style.Font.FontName = FontName;
@@ -389,7 +384,7 @@ namespace BSG.Tools.Services
                 var nameCell = ws.Cell(r, nameCol.Value);
                 var name = nameCell.GetString().Trim();
                 if (string.IsNullOrEmpty(name))
-                    continue; // skip placeholder/empty rows, same as the prototype
+                    continue; // skip placeholder/empty rows
 
                 products.Add(new ProductRow
                 {

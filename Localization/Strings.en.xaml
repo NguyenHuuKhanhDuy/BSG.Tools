@@ -77,4 +77,10 @@
     <system:String x:Key="Str_RestoreDefaultsTitle">Restore defaults</system:String>
     <system:String x:Key="Str_DefaultsRestored">Defaults restored.</system:String>
 
+    <!-- Status bar -->
+    <system:String x:Key="Str_StatusReady">Ready</system:String>
+    <system:String x:Key="Str_StatusReading">Reading file…</system:String>
+    <system:String x:Key="Str_StatusExporting">Exporting file…</system:String>
+    <system:String x:Key="Str_StatusExported">Exported {0} labels</system:String>
+
 </ResourceDictionary>

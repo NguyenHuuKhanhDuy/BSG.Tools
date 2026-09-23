@@ -17,9 +17,18 @@ namespace BSG.Tools
 {
     public partial class MainWindow : Window
     {
+        private enum StatusKind { Ready, Busy, Success, Error }
+
         private string? _lastSuccessfulOutputPath;
         private UpdateInfo? _pendingUpdate;
         private DispatcherTimer? _toastTimer;
+        private DispatcherTimer? _statusTimer;
+
+        // True while a preview load or export runs in the background; blocks starting another.
+        private bool _isBusy;
+        private StatusKind _statusKind = StatusKind.Ready;
+        // Re-evaluated on every render so the message follows a language switch.
+        private Func<string>? _statusMessage;
 
         public MainWindow()
         {
@@ -33,6 +42,7 @@ namespace BSG.Tools
             UpdateExportButtonEnabled();
             UpdatePreviewButtonEnabled();
             TxtVersion.Text = $"v{GetCurrentVersion()}";
+            ClearStatus();
             _ = CheckForUpdatesAsync();
         }
 
@@ -76,6 +86,24 @@ namespace BSG.Tools
             // Nếu thành công, ApplyUpdatesAndRestart() đã tự khởi động lại app — code sau điểm này sẽ không chạy.
         }
 
+        // ---------------- Tabs ----------------
+
+        // Clicking a tab header normally moves focus into the first input of that tab: WPF's
+        // TabItem focuses its content unless focus is already on a sibling tab header. Parking
+        // focus on the current header first makes the click just select the tab.
+        private void MainTabs_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            var source = e.OriginalSource as DependencyObject;
+            while (source is not null and not System.Windows.Controls.TabItem)
+                source = source is System.Windows.Media.Visual ? System.Windows.Media.VisualTreeHelper.GetParent(source) : null;
+
+            if (source is System.Windows.Controls.TabItem { IsSelected: false }
+                && MainTabs.SelectedItem is System.Windows.Controls.TabItem current)
+            {
+                current.Focus();
+            }
+        }
+
         // ---------------- Xuất file tab ----------------
 
         private void BtnChooseFile_Click(object sender, RoutedEventArgs e)
@@ -110,12 +138,12 @@ namespace BSG.Tools
             {
                 LabelExcelBuilder.BuildTemplate(dialog.FileName);
                 _lastSuccessfulOutputPath = dialog.FileName;
-                ClearStatus();
+                SetStatus(StatusKind.Success, () => LocalizationManager.GetString("Str_TemplateDownloaded"));
                 ShowToast(LocalizationManager.GetString("Str_TemplateDownloaded"), showOpenFolder: true);
             }
             catch (Exception ex)
             {
-                SetStatusError(string.Format(LocalizationManager.GetString("Str_TemplateCreateError"), ex.Message));
+                SetStatusError("Str_TemplateCreateError", ex.Message);
             }
         }
 
@@ -148,13 +176,13 @@ namespace BSG.Tools
 
         private void UpdateExportButtonEnabled()
         {
-            BtnExport.IsEnabled = File.Exists(TxtSourceFile.Text) && Directory.Exists(TxtOutputFolder.Text);
+            BtnExport.IsEnabled = !_isBusy && File.Exists(TxtSourceFile.Text) && Directory.Exists(TxtOutputFolder.Text);
         }
 
         // Preview only reads the source file, so it doesn't need an output folder.
         private void UpdatePreviewButtonEnabled()
         {
-            BtnPreview.IsEnabled = File.Exists(TxtSourceFile.Text);
+            BtnPreview.IsEnabled = !_isBusy && File.Exists(TxtSourceFile.Text);
         }
 
         /// <summary>
@@ -195,53 +223,83 @@ namespace BSG.Tools
             return $"temphu_{sourceName}_{dateSuffix}.xlsx";
         }
 
-        private void BtnExport_Click(object sender, RoutedEventArgs e)
+        private async void BtnExport_Click(object sender, RoutedEventArgs e)
         {
+            if (_isBusy)
+                return;
+
             if (string.IsNullOrWhiteSpace(TxtSourceFile.Text) || !File.Exists(TxtSourceFile.Text))
             {
-                SetStatusError(LocalizationManager.GetString("Str_ValidSourceFileRequired"));
+                SetStatusError("Str_ValidSourceFileRequired");
                 return;
             }
 
             var outputPath = GetOutputPath();
             if (outputPath is null)
             {
-                SetStatusError(LocalizationManager.GetString("Str_ValidOutputFolderRequired"));
+                SetStatusError("Str_ValidOutputFolderRequired");
                 return;
             }
 
+            // Read every control on the UI thread before handing the work off.
+            var sourcePath = TxtSourceFile.Text;
+            var options = CreateBuildOptions();
+
+            SetBusy(true);
+            SetStatus(StatusKind.Busy, () => LocalizationManager.GetString("Str_StatusExporting"));
             try
             {
-                LabelExcelBuilder.Build(TxtSourceFile.Text, outputPath, CreateBuildOptions());
+                var count = await Task.Run(() =>
+                {
+                    var labels = LabelExcelBuilder.LoadLabels(sourcePath, options);
+                    LabelExcelBuilder.Build(labels, outputPath);
+                    return labels.Count;
+                });
                 _lastSuccessfulOutputPath = outputPath;
-                ClearStatus();
+                SetExportedStatus(count);
                 ShowToast(LocalizationManager.GetString("Str_ExportSuccess"), showOpenFolder: true);
             }
             catch (Exception ex)
             {
-                SetStatusError(string.Format(LocalizationManager.GetString("Str_ExportError"), ex.Message));
+                SetStatusError("Str_ExportError", ex.Message);
+            }
+            finally
+            {
+                SetBusy(false);
             }
         }
 
-        private void BtnPreview_Click(object sender, RoutedEventArgs e)
+        private async void BtnPreview_Click(object sender, RoutedEventArgs e)
         {
+            if (_isBusy)
+                return;
+
             if (string.IsNullOrWhiteSpace(TxtSourceFile.Text) || !File.Exists(TxtSourceFile.Text))
             {
-                SetStatusError(LocalizationManager.GetString("Str_ValidSourceFileRequired"));
+                SetStatusError("Str_ValidSourceFileRequired");
                 return;
             }
+
+            var sourcePath = TxtSourceFile.Text;
+            var options = CreateBuildOptions();
 
             // Source-file problems (missing column, no products, file locked)
             // are reported here instead of opening an empty/broken preview.
             IReadOnlyList<LabelEntry> labels;
+            SetBusy(true);
+            SetStatus(StatusKind.Busy, () => LocalizationManager.GetString("Str_StatusReading"));
             try
             {
-                labels = LabelExcelBuilder.LoadLabels(TxtSourceFile.Text, CreateBuildOptions());
+                labels = await Task.Run(() => LabelExcelBuilder.LoadLabels(sourcePath, options));
             }
             catch (Exception ex)
             {
-                SetStatusError(string.Format(LocalizationManager.GetString("Str_PreviewLoadError"), ex.Message));
+                SetStatusError("Str_PreviewLoadError", ex.Message);
                 return;
+            }
+            finally
+            {
+                SetBusy(false);
             }
 
             ClearStatus();
@@ -249,29 +307,83 @@ namespace BSG.Tools
             if (preview.ShowDialog() == true && preview.ExportedPath is not null)
             {
                 _lastSuccessfulOutputPath = preview.ExportedPath;
+                SetExportedStatus(labels.Count);
                 ShowToast(LocalizationManager.GetString("Str_ExportSuccess"), showOpenFolder: true);
             }
         }
 
-        private void ClearStatus()
+        // ---------------- Status bar ----------------
+
+        private void SetBusy(bool busy)
         {
-            TxtStatus.Text = "";
-            TxtStatus.Cursor = System.Windows.Input.Cursors.Arrow;
-            TxtStatus.TextDecorations = null;
+            _isBusy = busy;
+            UpdateExportButtonEnabled();
+            UpdatePreviewButtonEnabled();
         }
 
-        private void SetStatusError(string message)
+        private void ClearStatus() => SetStatus(StatusKind.Ready, null);
+
+        private void SetExportedStatus(int count) =>
+            SetStatus(StatusKind.Success,
+                () => string.Format(LocalizationManager.GetString("Str_StatusExported"), count));
+
+        /// <summary>Shows a localized error: <paramref name="key"/> is a string resource key, formatted with <paramref name="args"/>.</summary>
+        private void SetStatusError(string key, params object[] args)
         {
             _lastSuccessfulOutputPath = null;
-            TxtStatus.Foreground = (System.Windows.Media.Brush)System.Windows.Application.Current.Resources["BrushStatusError"];
-            TxtStatus.Text = message;
-            TxtStatus.Cursor = System.Windows.Input.Cursors.Arrow;
+            SetStatus(StatusKind.Error, () => string.Format(LocalizationManager.GetString(key), args));
+        }
+
+        private void SetStatus(StatusKind kind, Func<string>? message)
+        {
+            _statusKind = kind;
+            _statusMessage = message;
+            RenderStatus();
+
+            // Success is a transient confirmation; errors stay until the next action so they can be read.
+            _statusTimer?.Stop();
+            if (kind == StatusKind.Success)
+            {
+                _statusTimer ??= CreateStatusTimer();
+                _statusTimer.Start();
+            }
+        }
+
+        private DispatcherTimer CreateStatusTimer()
+        {
+            var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
+            timer.Tick += (_, _) =>
+            {
+                timer.Stop();
+                ClearStatus();
+            };
+            return timer;
+        }
+
+        private void RenderStatus()
+        {
+            var brushKey = _statusKind switch
+            {
+                StatusKind.Busy => "BrushStatusBusy",
+                StatusKind.Success => "BrushStatusSuccess",
+                StatusKind.Error => "BrushStatusError",
+                _ => "BrushTextSecondary"
+            };
+            // Resource references (not a one-off lookup) so the colours follow a theme switch.
+            TxtStatus.SetResourceReference(System.Windows.Controls.TextBlock.ForegroundProperty, brushKey);
+            StatusDot.SetResourceReference(System.Windows.Shapes.Shape.FillProperty, brushKey);
+
+            TxtStatus.Text = _statusMessage?.Invoke() ?? LocalizationManager.GetString("Str_StatusReady");
+            // A success message can be clicked to open the output folder.
+            TxtStatus.Cursor = _statusKind == StatusKind.Success && _lastSuccessfulOutputPath is not null
+                ? System.Windows.Input.Cursors.Hand
+                : System.Windows.Input.Cursors.Arrow;
             TxtStatus.TextDecorations = null;
         }
 
         private void TxtStatus_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            if (_lastSuccessfulOutputPath is null)
+            if (_statusKind != StatusKind.Success || _lastSuccessfulOutputPath is null)
                 return;
 
             OpenContainingFolder(_lastSuccessfulOutputPath);
@@ -296,7 +408,7 @@ namespace BSG.Tools
             }
             catch
             {
-                SetStatusError(LocalizationManager.GetString("Str_OpenFolderError"));
+                SetStatusError("Str_OpenFolderError");
             }
         }
 
@@ -385,6 +497,8 @@ namespace BSG.Tools
 
             var language = CurrentLanguageTag();
             LocalizationManager.Apply(language);
+            // Status text is set from code, so it doesn't follow DynamicResource on its own.
+            RenderStatus();
 
             // Persisted immediately (not gated behind "Lưu cài đặt") since this is
             // an app-wide display preference, not label content — same as dark mode.

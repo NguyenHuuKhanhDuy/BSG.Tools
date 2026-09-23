@@ -107,7 +107,7 @@ namespace BSG.Tools
             catch (Exception ex)
             {
                 // Stay open so the user can fix the cause (e.g. close the file in Excel) and retry.
-                TxtPreviewStatus.Foreground = (System.Windows.Media.Brush)System.Windows.Application.Current.Resources["BrushStatusError"];
+                TxtPreviewStatus.SetResourceReference(System.Windows.Controls.TextBlock.ForegroundProperty, "BrushStatusError");
                 TxtPreviewStatus.Text = string.Format(LocalizationManager.GetString("Str_ExportError"), ex.Message);
             }
         }

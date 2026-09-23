@@ -27,4 +27,17 @@
     <SolidColorBrush x:Key="BrushWarningBorder" Color="#8A6D1F"/>
     <SolidColorBrush x:Key="BrushWarningText" Color="#F2C94C"/>
 
+    <SolidColorBrush x:Key="BrushOnAccent" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="BrushAccentSubtle" Color="#22304A"/>
+    <SolidColorBrush x:Key="BrushAccentSubtlePressed" Color="#2A3D60"/>
+    <!-- Semi-transparent accent halo drawn around a focused input. -->
+    <SolidColorBrush x:Key="BrushFocusGlow" Color="#594C8DFF"/>
+    <!-- Shadows barely show on a dark background, so dark cards get a thin border instead. -->
+    <SolidColorBrush x:Key="BrushCardBorder" Color="#33363D"/>
+    <SolidColorBrush x:Key="BrushFieldLabel" Color="#C3C7CF"/>
+    <SolidColorBrush x:Key="BrushStatusBarBackground" Color="#222328"/>
+    <SolidColorBrush x:Key="BrushStatusBusy" Color="#4C8DFF"/>
+    <DropShadowEffect x:Key="EffectCardShadow" Color="#000000" BlurRadius="14" ShadowDepth="2"
+                      Direction="270" Opacity="0.25"/>
+
 </ResourceDictionary>
