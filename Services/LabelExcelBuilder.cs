@@ -15,11 +15,7 @@ namespace BSG.Tools.Services
         public string Quantity { get; set; } = "";     // SL
     }
 
-    /// <summary>
-    /// Everything the export needs besides the source file itself:
-    /// the checkbox-controlled supplier fields, and the always-on fields
-    /// that come from the Settings tab.
-    /// </summary>
+    /// <summary>Everything the export needs besides the source file: supplier fields and Settings-tab values.</summary>
     public class BuildOptions
     {
         public bool IncludeSupplier { get; set; }
@@ -45,11 +41,7 @@ namespace BSG.Tools.Services
         public bool IsEmpty => string.IsNullOrWhiteSpace(Value);
     }
 
-    /// <summary>
-    /// One product's label exactly as it will be written to the sheet - the
-    /// shared data behind both the in-app preview and the Excel export, so
-    /// the two can never disagree about what a label contains.
-    /// </summary>
+    /// <summary>One product's label as written to the sheet; shared by preview and export so they always match.</summary>
     public class LabelEntry
     {
         public int Stt { get; set; }
@@ -68,19 +60,11 @@ namespace BSG.Tools.Services
         private const int ContentEndCol = 6;
         private const int SlCol = 7;
 
-        /// <summary>
-        /// Reads the source workbook (must have header row with columns
-        /// "TÊN SẢN PHẨM", "XUẤT XỨ", "THÀNH PHẦN", "SL") and writes the
-        /// label sheet to outputPath.
-        /// </summary>
+        /// <summary>Reads the source workbook (TÊN SẢN PHẨM, XUẤT XỨ, THÀNH PHẦN, SL columns) and writes the label sheet.</summary>
         public static void Build(string sourcePath, string outputPath, BuildOptions opts)
             => Build(LoadLabels(sourcePath, opts), outputPath);
 
-        /// <summary>
-        /// Reads the source workbook and builds every product's label content
-        /// (STT, title, quantity and ordered "Label: value" lines), without
-        /// writing anything. Throws if the source has no products.
-        /// </summary>
+        /// <summary>Builds every product's label content without writing anything. Throws if there are no products.</summary>
         public static IReadOnlyList<LabelEntry> LoadLabels(string sourcePath, BuildOptions opts)
         {
             var products = ReadProducts(sourcePath);
@@ -136,11 +120,8 @@ namespace BSG.Tools.Services
                 ws.Range(headerRow, SlCol, headerRow, SlCol),
             })
             {
-                // Style applied to the RANGE (not a single cell) so every cell
-                // covered by a merge ends up with the same format. Styling only
-                // the anchor cell leaves the other cells in the merge on the
-                // default format, which is what made Excel flag the merged
-                // block with an "inconsistent region" warning triangle.
+                // Style the whole merged RANGE, not just the anchor cell, or Excel flags the merge
+                // with an "inconsistent region" warning.
                 rng.Style.Font.FontName = FontName;
                 rng.Style.Font.Bold = true;
                 rng.Style.Font.FontSize = 12;
@@ -153,8 +134,7 @@ namespace BSG.Tools.Services
             headerFullRow.Style.Border.BottomBorderColor = XLColor.Black;
 
             // ---- Product blocks ----
-            // Start one row below the header so there is a blank spacer row,
-            // matching the spacing already used between product blocks.
+            // Start below a blank spacer row, the same gap as between product blocks.
             int currentRow = headerRow + 2;
 
             foreach (var label in labels)
@@ -194,9 +174,7 @@ namespace BSG.Tools.Services
                 slRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
                 slRange.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
 
-                // Borders: only the content block gets a box (title: top/left/right,
-                // content: bottom/left/right - no border on the shared edge, so it
-                // reads as one seamless block). STT and SL stay borderless.
+                // Only the content block is boxed, with no border on the title/content seam; STT and SL stay borderless.
                 titleRange.Style.Border.TopBorder = XLBorderStyleValues.Thin;
                 titleRange.Style.Border.LeftBorder = XLBorderStyleValues.Thin;
                 titleRange.Style.Border.RightBorder = XLBorderStyleValues.Thin;
@@ -215,11 +193,7 @@ namespace BSG.Tools.Services
             workbook.SaveAs(outputPath);
         }
 
-        /// <summary>
-        /// Writes a blank source-file template: the header row expected by
-        /// <see cref="ReadProducts"/> plus one example data row, so users know
-        /// which columns to fill in.
-        /// </summary>
+        /// <summary>Writes a source-file template: the expected header row plus one example row.</summary>
         public static void BuildTemplate(string outputPath)
         {
             using var workbook = new XLWorkbook();
@@ -260,11 +234,7 @@ namespace BSG.Tools.Services
             workbook.SaveAs(outputPath);
         }
 
-        /// <summary>
-        /// Builds the ordered (Label, Value) fields shown in a product's content
-        /// cell, shared between rich-text rendering and row-height estimation
-        /// so both always agree on what will actually be displayed.
-        /// </summary>
+        /// <summary>Ordered content lines, shared by rich-text rendering and row-height estimation.</summary>
         private static List<LabelLine> BuildContentLines(ProductRow p, BuildOptions opts)
         {
             var year = string.IsNullOrWhiteSpace(opts.ProductionYear)
@@ -306,21 +276,15 @@ namespace BSG.Tools.Services
             return lines;
         }
 
-        // Rough characters-per-Excel-column-width-unit for Arial 11 with wrap
-        // text, used only to estimate how many display lines a field needs.
+        // Rough chars per column-width unit for Arial 11, used only to estimate wrapped line counts.
         private const double CharsPerWidthUnit = 1.0;
         private const double LineHeightPoints = 15.0;
         private const double ContentRowVerticalPadding = 6.0;
         private const double MinContentRowHeight = 40.0;
 
         /// <summary>
-        /// Estimates a content row height (in points) from the number of
-        /// fields and their text length, so short products (few/short fields)
-        /// get a shorter row and long ones get a taller row - instead of a
-        /// single fixed height for every product. This is an approximation:
-        /// ClosedXML has no reliable auto-fit for wrapped merged cells, and
-        /// exact pixel-perfect wrapping depends on the fonts installed on the
-        /// machine that later opens the file in Excel.
+        /// Approximate content row height (points) from field count and text length. ClosedXML can't
+        /// auto-fit wrapped merged cells, and real wrapping depends on the viewer's fonts.
         /// </summary>
         private static double EstimateContentRowHeight(IReadOnlyList<LabelLine> lines, double mergedColumnWidthUnits)
         {
@@ -338,11 +302,8 @@ namespace BSG.Tools.Services
         }
 
         /// <summary>
-        /// Builds the multi-line rich text for the content cell: each field is
-        /// its own line ("Label: value"), label bold, value normal. Fields with
-        /// no value only get the bold label (no trailing empty run - an empty
-        /// inline-string run has been observed to make real Excel show a
-        /// "we found a problem with some content" repair prompt).
+        /// Content cell rich text: one "Label: value" line per field, label bold. Empty values get no
+        /// trailing run: an empty run makes Excel show a "found a problem with some content" prompt.
         /// </summary>
         private static void FillContentRichText(IXLCell cell, IReadOnlyList<LabelLine> lines)
         {
@@ -366,11 +327,7 @@ namespace BSG.Tools.Services
             }
         }
 
-        /// <summary>
-        /// Reads products from the first worksheet of the source file. Column
-        /// positions are looked up by header name in row 1, so column order in
-        /// the source file doesn't matter. Rows with no product name are skipped.
-        /// </summary>
+        /// <summary>Reads products from the first sheet; columns are found by header name, rows without a name are skipped.</summary>
         private static List<ProductRow> ReadProducts(string sourcePath)
         {
             using var workbook = new XLWorkbook(sourcePath);

@@ -9,8 +9,7 @@ namespace BSG.Tools
     {
         public App()
         {
-            // Must run as early as possible (before any UI) so Velopack can handle
-            // its internal install/uninstall/update hooks correctly.
+            // Must run before any UI so Velopack can handle its install/update hooks.
             VelopackApp.Build().Run();
         }
 
@@ -18,9 +17,7 @@ namespace BSG.Tools
         {
             base.OnStartup(e);
 
-            // Apply the saved theme/language before the window is created, so it
-            // renders correctly from the first frame instead of flashing the
-            // defaults then switching.
+            // Apply saved theme/language before the window exists, so the first frame is already right.
             var settings = SettingsService.Load();
             ThemeManager.Apply(settings.Theme);
             LocalizationManager.Apply(settings.Language);

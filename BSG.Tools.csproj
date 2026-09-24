@@ -12,15 +12,14 @@
     <AssemblyName>BSG.Tools</AssemblyName>
     <!-- Local/dev default; CI overrides this per release via `dotnet publish -p:Version=X.Y.Z` from the Git tag -->
     <Version>0.0.1</Version>
-    <!-- Placeholder logo (see Assets/AppIcon.svg). Embedded in the exe; WPF windows without
-         their own Icon (title bar, taskbar, Alt+Tab) use it too. -->
+    <!-- Placeholder logo (Assets/AppIcon.svg); WPF windows use the exe icon too. -->
     <ApplicationIcon>Assets\AppIcon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Excel read/write. Install via: dotnet add package ClosedXML -->
+    <!-- Excel read/write -->
     <PackageReference Include="ClosedXML" Version="0.104.1" />
-    <!-- Windows installer packaging + in-app auto-update. Install via: dotnet add package Velopack -->
+    <!-- Installer packaging + in-app auto-update -->
     <PackageReference Include="Velopack" Version="1.2.0" />
   </ItemGroup>
 

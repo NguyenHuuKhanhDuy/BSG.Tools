@@ -13,9 +13,8 @@ namespace BSG.Tools.Models
     }
 
     /// <summary>
-    /// The fixed set of label fields, in their default order with their default
-    /// labels. Labels are label content (Vietnamese, as printed on the label),
-    /// not UI strings, so they don't go through LocalizationManager.
+    /// Fixed set of label fields with their default order and labels. Labels are printed label
+    /// content (Vietnamese), not UI strings, so they aren't localized.
     /// </summary>
     public static class LabelFieldCatalog
     {
@@ -51,10 +50,8 @@ namespace BSG.Tools.Models
             DefaultFields.Select(f => new LabelFieldSetting { Key = f.Key, Label = f.Label }).ToList();
 
         /// <summary>
-        /// Always returns every known field exactly once: saved fields keep their
-        /// order, unknown or duplicate keys are dropped, and fields missing from
-        /// the saved list (older settings file, or a field added in a later
-        /// version) are appended enabled with their default label.
+        /// Every known field exactly once: saved order kept, unknown/duplicate keys dropped, missing
+        /// fields (older settings file, newer app) appended enabled with their default label.
         /// </summary>
         public static List<LabelFieldSetting> Normalize(IEnumerable<LabelFieldSetting>? saved)
         {

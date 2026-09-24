@@ -42,9 +42,7 @@ namespace BSG.Tools
             LabelFieldList.ItemsSource = _labelFieldRows;
             // Reordering (drag & drop, Alt+Up/Down) changes positions, which count as unsaved changes.
             _labelFieldRows.CollectionChanged += (_, _) => UpdateUnsavedState();
-            // Theme's palette was already applied at startup (App.xaml.cs); this
-            // paints this window's native title bar to match, since that's OS
-            // chrome DynamicResource styling can't reach.
+            // Title bar is OS chrome, so it's themed separately from the DynamicResource palette.
             ThemeManager.ApplyTitleBar(this);
             LoadSettingsIntoUi();
             UpdateSupplierInputsEnabled();
@@ -97,9 +95,8 @@ namespace BSG.Tools
 
         // ---------------- Tabs ----------------
 
-        // Clicking a tab header normally moves focus into the first input of that tab: WPF's
-        // TabItem focuses its content unless focus is already on a sibling tab header. Parking
-        // focus on the current header first makes the click just select the tab.
+        // Clicking a header would move focus into the tab's first input (WPF focuses the content
+        // unless focus is on a sibling header), so park focus on the current header first.
         private void MainTabs_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             var source = e.OriginalSource as DependencyObject;
@@ -159,8 +156,7 @@ namespace BSG.Tools
 
         private void BtnChooseFolder_Click(object sender, RoutedEventArgs e)
         {
-            // WPF has no built-in folder picker; System.Windows.Forms.FolderBrowserDialog
-            // is available because the project sets <UseWindowsForms>true</UseWindowsForms>.
+            // WPF has no folder picker; WinForms' is available via <UseWindowsForms>.
             using var dialog = new System.Windows.Forms.FolderBrowserDialog();
             if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
@@ -195,10 +191,7 @@ namespace BSG.Tools
             BtnPreview.IsEnabled = !_isBusy && File.Exists(TxtSourceFile.Text);
         }
 
-        /// <summary>
-        /// Export inputs shared by direct export and export-from-preview: the
-        /// supplier fields on this tab plus the saved label settings.
-        /// </summary>
+        /// <summary>Export inputs shared by direct export and export-from-preview.</summary>
         private BuildOptions CreateBuildOptions()
         {
             var settings = SettingsService.Load();
@@ -334,7 +327,7 @@ namespace BSG.Tools
             SetStatus(StatusKind.Success,
                 () => string.Format(LocalizationManager.GetString("Str_StatusExported"), count));
 
-        /// <summary>Shows a localized error: <paramref name="key"/> is a string resource key, formatted with <paramref name="args"/>.</summary>
+        /// <summary>Shows a localized error; <paramref name="key"/> is a string resource key.</summary>
         private void SetStatusError(string key, params object[] args)
         {
             _lastSuccessfulOutputPath = null;
@@ -443,8 +436,7 @@ namespace BSG.Tools
             _savedSettings = settings;
             TxtImporter.Text = settings.Importer;
             TxtImporterAddress.Text = settings.ImporterAddress;
-            // Show the current year as a placeholder default, but keep it
-            // editable/custom if the user already saved a specific value.
+            // A blank saved year shows the current year; a custom one is kept.
             TxtProductionYear.Text = string.IsNullOrWhiteSpace(settings.ProductionYear)
                 ? DateTime.Now.Year.ToString()
                 : settings.ProductionYear;
@@ -453,8 +445,7 @@ namespace BSG.Tools
             TxtFileNamePattern.Text = settings.ExportFileNamePattern;
             LoadLabelFieldRows(settings.LabelFields);
 
-            // Theme/language were already applied at startup (App.xaml.cs); this
-            // just syncs the controls so they reflect the saved preference.
+            // Theme/language were applied at startup (App.xaml.cs); just sync the controls.
             ChkDarkMode.IsChecked = settings.Theme == ThemeManager.Dark;
             foreach (System.Windows.Controls.ComboBoxItem item in CmbLanguage.Items)
             {
@@ -496,8 +487,7 @@ namespace BSG.Tools
             var theme = ChkDarkMode.IsChecked == true ? ThemeManager.Dark : ThemeManager.Light;
             ThemeManager.Apply(theme);
 
-            // Persisted immediately (not gated behind "Lưu cài đặt") since this is
-            // an app-wide display preference, not label content.
+            // Saved immediately: a display preference, not label content.
             var settings = SettingsService.Load();
             settings.Theme = theme;
             SettingsService.Save(settings);
@@ -517,8 +507,7 @@ namespace BSG.Tools
             RenderStatus();
             UpdateFileNameExample();
 
-            // Persisted immediately (not gated behind "Lưu cài đặt") since this is
-            // an app-wide display preference, not label content — same as dark mode.
+            // Saved immediately, like dark mode.
             var settings = SettingsService.Load();
             settings.Language = language;
             SettingsService.Save(settings);
@@ -549,8 +538,7 @@ namespace BSG.Tools
             if (result != MessageBoxResult.Yes)
                 return;
 
-            // "Restore defaults" only resets the label-content fields below —
-            // dark mode/language are separate display preferences, left untouched.
+            // Only label content is reset; dark mode and language are kept.
             var defaults = new AppSettings
             {
                 Theme = ChkDarkMode.IsChecked == true ? ThemeManager.Dark : ThemeManager.Light,
@@ -584,9 +572,8 @@ namespace BSG.Tools
         }
 
         /// <summary>
-        /// Compares every Settings-tab field with the last saved settings: marks the ones that
-        /// differ and enables "Lưu cài đặt" only when at least one does. Dark mode and language
-        /// save themselves immediately, so they are not part of this.
+        /// Marks Settings-tab fields that differ from the last saved settings and enables
+        /// "Lưu cài đặt" only when one does. Dark mode/language save themselves, so they're excluded.
         /// </summary>
         private void UpdateUnsavedState()
         {
@@ -660,8 +647,7 @@ namespace BSG.Tools
             var focusedType = e.OriginalSource.GetType();
             _labelFieldRows.Move(from, to);
 
-            // The moved row's container is regenerated, so put focus back on the same kind of
-            // control (label box or checkbox) in its new position once layout has caught up.
+            // The moved row's container is regenerated; refocus the same kind of control once laid out.
             Dispatcher.BeginInvoke(DispatcherPriority.Loaded, () =>
             {
                 if (LabelFieldList.ItemContainerGenerator.ContainerFromIndex(to) is DependencyObject container)

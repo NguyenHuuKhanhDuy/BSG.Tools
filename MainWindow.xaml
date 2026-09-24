@@ -150,8 +150,7 @@
                                                         <ColumnDefinition Width="Auto"/>
                                                         <ColumnDefinition Width="*"/>
                                                     </Grid.ColumnDefinitions>
-                                                    <!-- Drag handle: dragging starts only here, so text selection in the
-                                                         label box keeps working. -->
+                                                    <!-- Drag handle: dragging starts only here, so text selection in the label box still works. -->
                                                     <Border Grid.Column="0" Width="22" Background="Transparent" Cursor="SizeAll"
                                                             Margin="0,0,6,0" ToolTip="{DynamicResource Str_DragToReorder}"
                                                             PreviewMouseLeftButtonDown="FieldGrip_PreviewMouseLeftButtonDown">

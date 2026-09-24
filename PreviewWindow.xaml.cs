@@ -42,9 +42,8 @@ namespace BSG.Tools
         }
 
         /// <summary>
-        /// "N products · Total quantity: X". Quantity is free text in the source
-        /// file (SL column), so only whole numbers are summed; the rest are
-        /// counted separately instead of silently dropped.
+        /// "N products · Total quantity: X". SL is free text, so only whole numbers are summed and
+        /// the rest are counted separately.
         /// </summary>
         private void ShowSummary()
         {
@@ -72,11 +71,7 @@ namespace BSG.Tools
             }
         }
 
-        /// <summary>
-        /// Warns about fields that are empty on every label (typically a blank
-        /// setting or supplier field). A field empty on only some products is
-        /// just highlighted on those lines, so the banner stays short.
-        /// </summary>
+        /// <summary>Warns about fields empty on every label; fields empty on only some are highlighted inline.</summary>
         private void ShowEmptyFieldWarning()
         {
             var emptyEverywhere = _labels[0].Lines

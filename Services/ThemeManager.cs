@@ -22,12 +22,8 @@ namespace BSG.Tools.Services
         public static bool IsDark { get; private set; }
 
         /// <summary>
-        /// Swaps the app's theme resource dictionary (index 0 of the merged
-        /// dictionaries in App.xaml) for the requested theme. Styles reference
-        /// the palette brushes via DynamicResource, so every open window's
-        /// client area repaints immediately. Also repaints each open window's
-        /// native title bar, which DynamicResource cannot reach (Windows draws
-        /// it itself).
+        /// Swaps the theme dictionary (index 0 in App.xaml) and repaints every open window's
+        /// native title bar, which DynamicResource can't reach.
         /// </summary>
         public static void Apply(string? theme)
         {
@@ -50,10 +46,8 @@ namespace BSG.Tools.Services
         }
 
         /// <summary>
-        /// Paints a single window's native title bar to match the current theme
-        /// (see <see cref="IsDark"/>). Forces the window's handle to exist if it
-        /// doesn't yet, so this can be called right after InitializeComponent —
-        /// before the window is shown — to avoid a light-then-dark flash.
+        /// Paints one window's native title bar for the current theme. Creates the window handle if
+        /// needed, so it can run before Show() and avoid a light-then-dark flash.
         /// </summary>
         public static void ApplyTitleBar(Window window)
         {
@@ -67,8 +61,7 @@ namespace BSG.Tools.Services
             }
             catch
             {
-                // Older Windows versions without this DWM attribute: title bar
-                // just stays the OS default. Not worth failing startup over.
+                // Older Windows without this DWM attribute keeps the default title bar.
             }
         }
     }

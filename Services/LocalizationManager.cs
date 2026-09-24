@@ -11,12 +11,7 @@ namespace BSG.Tools.Services
 
         public static string Current { get; private set; } = Vietnamese;
 
-        /// <summary>
-        /// Swaps the app's string resource dictionary (index 1 of the merged
-        /// dictionaries in App.xaml, right after the theme at index 0) for the
-        /// requested language. XAML text references the strings via
-        /// DynamicResource, so every open window repaints its text immediately.
-        /// </summary>
+        /// <summary>Swaps the string dictionary (index 1 in App.xaml); DynamicResource text updates at once.</summary>
         public static void Apply(string? language)
         {
             Current = language == English ? English : Vietnamese;
@@ -34,11 +29,7 @@ namespace BSG.Tools.Services
                 merged.Add(stringsDictionary);
         }
 
-        /// <summary>
-        /// Looks up a localized string for use from code-behind (status
-        /// messages, MessageBox text, dialog titles) where DynamicResource
-        /// markup isn't available.
-        /// </summary>
+        /// <summary>Localized string for code-behind (status text, MessageBox, dialogs).</summary>
         public static string GetString(string key) =>
             Application.Current.Resources[key] as string ?? key;
     }

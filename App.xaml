@@ -6,12 +6,9 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <!-- Swapped at runtime by ThemeManager; keep this as the first
-                     merged dictionary so ThemeManager can replace it in place. -->
+                <!-- Swapped at runtime by ThemeManager; keep as the first merged dictionary. -->
                 <ResourceDictionary Source="Themes/LightTheme.xaml"/>
-                <!-- Swapped at runtime by LocalizationManager; keep this as the
-                     second merged dictionary so LocalizationManager can replace
-                     it in place. -->
+                <!-- Swapped at runtime by LocalizationManager; keep as the second merged dictionary. -->
                 <ResourceDictionary Source="Localization/Strings.vi.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
@@ -52,10 +49,8 @@
             <Setter Property="Effect" Value="{DynamicResource EffectCardShadow}"/>
         </Style>
 
-        <!-- Transparent host around a button that can be disabled. A disabled element is skipped
-             by mouse hit-testing, so its own Cursor never shows; the host underneath then gets
-             the mouse and shows "not allowed". While the button is enabled it covers the host
-             and its own hand cursor wins. -->
+        <!-- Host around a button that can be disabled: a disabled element isn't hit-tested, so the host
+             gets the mouse and shows "not allowed"; while enabled, the button's hand cursor wins. -->
         <Style x:Key="DisabledCursorHostStyle" TargetType="Border">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Cursor" Value="No"/>
@@ -76,8 +71,7 @@
             <Setter Property="Margin" Value="{StaticResource SpacingLabel}"/>
         </Style>
 
-        <!-- Field label that dims together with the input it describes, for fields
-             whose enabled state is toggled at runtime (e.g. supplier info). -->
+        <!-- Field label that dims with its input when the input is disabled (supplier fields). -->
         <Style x:Key="SupplierFieldLabelStyle" TargetType="TextBlock" BasedOn="{StaticResource FieldLabelStyle}">
             <Style.Triggers>
                 <Trigger Property="IsEnabled" Value="False">
@@ -154,9 +148,7 @@
             </Setter>
         </Style>
 
-        <!-- Read-only path field (source file / output folder): value is only ever set
-             via its picker button, so it shows a non-text cursor and, while empty, a
-             placeholder hint instead of a blank box. -->
+        <!-- Read-only path field set via its picker button: arrow cursor, and a placeholder while empty. -->
         <Style x:Key="ReadOnlyPathTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
             <Setter Property="Cursor" Value="Arrow"/>
             <Setter Property="Template">
@@ -173,11 +165,9 @@
                                     CornerRadius="{StaticResource RadiusControl}">
                                 <ScrollViewer x:Name="PART_ContentHost"/>
                             </Border>
-                            <!-- FontSize set locally: the app-wide implicit TextBlock style would
-                                 otherwise force the body size instead of the input size. The extra
-                                 2px left padding matches TextBox's built-in caret gutter, so the hint
-                                 lines up with typed text. (TextBox applies Padding to its content
-                                 itself, so PART_ContentHost must not repeat it as a Margin.) -->
+                            <!-- Local FontSize: the implicit TextBlock style would force the body size. The 2px padding
+                                 matches TextBox's caret gutter so the hint lines up with typed text. TextBox applies
+                                 Padding itself, so PART_ContentHost has no Margin. -->
                             <TextBlock x:Name="placeholder"
                                        Text="{TemplateBinding Tag}"
                                        Foreground="{DynamicResource BrushTextSecondary}"
@@ -266,8 +256,7 @@
         </Style>
 
         <!-- ===================== BUTTON (secondary / default: outline) ===================== -->
-        <!-- Every button without an explicit style is a secondary action, drawn as an accent
-             outline on a transparent background so it never looks like an input field. -->
+        <!-- Default for every unstyled button: accent outline, so it never looks like an input. -->
         <Style TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{DynamicResource BrushAccent}"/>
@@ -287,14 +276,8 @@
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
                                 CornerRadius="{StaticResource RadiusControl}">
-                            <!-- A plain-string Content (e.g. Content="Lưu cài đặt") gets auto-wrapped by
-                                 WPF's default ContentPresenter in a TextBlock that, empirically, does NOT
-                                 resolve implicit TextBlock styles through this Border's (or any ancestor's)
-                                 Resources — it always resolves to the app-wide implicit TextBlock style
-                                 instead, ignoring this button's own Foreground. Giving ContentPresenter an
-                                 explicit ContentTemplate and setting Foreground there as a literal element
-                                 value (not a Style Setter) sidesteps that entirely, since a local value
-                                 always wins over any Style Setter. -->
+                            <!-- An auto-wrapped plain-string Content picks up the app-wide implicit TextBlock style and
+                                 ignores this button's Foreground; an explicit ContentTemplate with a local Foreground fixes it. -->
                             <ContentPresenter Margin="{TemplateBinding Padding}"
                                                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                                VerticalAlignment="{TemplateBinding VerticalContentAlignment}">
@@ -370,9 +353,7 @@
         </Style>
 
         <!-- ===================== BUTTON (link / low-emphasis auxiliary action) ===================== -->
-        <!-- For actions like "Tải file mẫu" that sit next to a primary action (e.g. "Chọn
-             file...") but are used far less often — styled as a text link, clearly distinct
-             so it isn't mistaken for the primary button next to it. -->
+        <!-- Low-emphasis action next to a primary one (e.g. "Tải file mẫu"), styled as a text link. -->
         <Style x:Key="LinkButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{DynamicResource BrushAccent}"/>
@@ -385,9 +366,7 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border Background="Transparent">
-                            <!-- Same reasoning as the other button styles: a plain-string Content's
-                                 auto-wrapped TextBlock ignores this button's own Foreground unless set
-                                 as a literal element value via an explicit ContentTemplate. -->
+                            <!-- Same ContentTemplate fix as the base Button style. -->
                             <ContentPresenter VerticalAlignment="Center">
                                 <ContentPresenter.ContentTemplate>
                                     <DataTemplate>
@@ -454,9 +433,7 @@
                             <Border x:Name="focusRing" Margin="-3" BorderThickness="3"
                                     BorderBrush="Transparent" CornerRadius="{StaticResource RadiusFocusRing}"
                                     IsHitTestVisible="False"/>
-                            <!-- Visible chrome: one border spanning the whole control, drawn
-                                 once here rather than inside the toggle button, so it never
-                                 splits into a separate box around just the arrow. -->
+                            <!-- One border for the whole control, so the arrow never gets its own box. -->
                             <Border x:Name="border"
                                     Background="{DynamicResource BrushCardBackground}"
                                     BorderBrush="{DynamicResource BrushBorder}"
@@ -478,8 +455,7 @@
                                 </Grid>
                             </Border>
 
-                            <!-- Transparent hit-test layer on top: opens the dropdown without
-                                 drawing any chrome of its own. -->
+                            <!-- Transparent hit-test layer that opens the dropdown. -->
                             <ToggleButton x:Name="ToggleButton" Focusable="False" ClickMode="Press"
                                           IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}">
                                 <ToggleButton.Template>
